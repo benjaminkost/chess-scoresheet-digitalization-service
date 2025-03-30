@@ -137,9 +137,9 @@ save_dataset_to_hugging_face(dataset, path_to_dataset, "BenjaminKost", "unproces
 # Create Huggingface dataset from processed HCS dataset (extracted move boxes)
 
 ## Paths
-image_dir = "../data/raw_data/processed_hcs_data/images"
-label_file = "../data/raw_data/unprocessed_hcs_data/training_tags.txt"
-path_to_dataset = "../data/datasets/processed_hcs"
+image_dir = "data/raw_data/processed_hcs_data/images"
+label_file = "data/raw_data/unprocessed_hcs_data/training_tags.txt"
+path_to_dataset = "data/datasets/processed_hcs"
 
 ## Make dict object with image and corresponding label
 processed_hcs_image_label_dict = ground_truth_dict_image_to_label(image_dir, label_file)
