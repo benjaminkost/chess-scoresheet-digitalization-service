@@ -1,6 +1,6 @@
 import unittest
 
-from src.pipeline_classes.impl.ImageDataIngestorImpl import ImageDataIngestorImpl
+from src.classes_for_steps.ingest_data import ImageDataIngestorImpl
 
 
 class ImageDataIngestorTest(unittest.TestCase):
