@@ -15,7 +15,6 @@ if __name__ == "__main__":
     strategy = UnprocessedHcsImageLabelDirToDatasetStrategy()
     HuggingfaceDataVersioning(strategy).upload_dataset(path_to_dataset, path_to_image_dir, path_to_label_file, owner, dataset_name)
     """
-
     """
     # Processed HCS
     ## input parameter
