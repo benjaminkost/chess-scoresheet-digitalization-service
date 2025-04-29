@@ -3,7 +3,25 @@ from abc import abstractmethod
 from abc import ABC
 from src.data_to_hf.image_files_to_dataset_strategy import ImageLabelDirToDatasetStrategy
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# Logger set-up
+# ANSI Escape Code for white letters
+WHITE = "\033[37m"
+RESET = "\033[0m"  # Zum Zurücksetzen der Farbe
+
+# Logger configure
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Console-Handler
+handler = logging.StreamHandler()
+handler.setLevel(logging.DEBUG)
+
+# Formatter with ANSI Escape Code for white letters
+formatter = logging.Formatter(f'{WHITE}%(asctime)s - %(name)s - %(levelname)s - %(message)s{RESET}')
+handler.setFormatter(formatter)
+
+# Handler for Logger added
+logger.addHandler(handler)
 
 class DataVersioning(ABC):
     @abstractmethod
@@ -29,7 +47,7 @@ class HuggingfaceDataVersioning(DataVersioning):
         self.dataset_strategy = dataset_strategy
 
     def set_dataset_strategy(self, dataset_strategy: ImageLabelDirToDatasetStrategy):
-        logging.info(f"Set dataset strategy to {dataset_strategy}")
+        logger.info(f"Set dataset strategy to {dataset_strategy}")
 
         self.dataset_strategy = dataset_strategy
 
@@ -40,9 +58,9 @@ class HuggingfaceDataVersioning(DataVersioning):
         # Save dataset to disk
         dataset.save_to_disk(path_to_save_dataset)
 
-        logging.info(f"Dataset successfully saved to disk under: {path_to_save_dataset}.")
+        logger.info(f"Dataset successfully saved to disk under: {path_to_save_dataset}.")
 
         # upload dataset to Huggingface
         dataset.push_to_hub(owner+"/"+dataset_name)
 
-        logging.info(f"Dataset successfully uploaded to Huggingface repo: {owner}/{dataset_name}.")
+        logger.info(f"Dataset successfully uploaded to Huggingface repo: {owner}/{dataset_name}.")
