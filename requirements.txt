@@ -53,3 +53,5 @@ uvicorn==0.34.1
 wcwidth==0.2.13
 xxhash==3.5.0
 yarl==1.18.3
+pillow==11.2.1
+scikit-learn==1.6.1
