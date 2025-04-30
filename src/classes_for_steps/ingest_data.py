@@ -31,7 +31,7 @@ class DataIngestor(ABC):
         pass
 
 # Implement a concrete class for Image Data Ingestion
-class ImageDataIngestorImpl(DataIngestor):
+class HuggingFaceImageIngestor(DataIngestor):
     def ingest_image_dataset_from_huggingface(self, owner: str, dataset_name: str) -> Dataset:
         """
         Loads an image dataset from Hugging Face.
