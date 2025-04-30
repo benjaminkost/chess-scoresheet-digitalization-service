@@ -55,3 +55,5 @@ xxhash==3.5.0
 yarl==1.18.3
 pillow==11.2.1
 scikit-learn==1.6.1
+git+https://github.com/benjaminkost/pythreshold # forked pythreshold==0.3.1
+git+https://github.com/benjaminkost/Contour-Detection # forked Contour-Detection
