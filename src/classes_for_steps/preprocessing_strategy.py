@@ -5,6 +5,7 @@ from PIL import Image
 import cv2
 import numpy as np
 from datasets import Dataset, DatasetDict
+from pandas.compat.numpy.function import SORT_DEFAULTS
 
 # Configure Logger:
 # ANSI Escape Code for white letters
@@ -54,7 +55,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         return res_dataset
 
-        ##TODO: Implement Method
+    ##TODO: Implement Method
     def generate_move_boxes_from_image_dataset(self, dataset: Dataset) -> Dataset:
         """Abstract method to generate move boxes from an image dataset"""
         ## Convert images from RGB to gray-scale
@@ -64,9 +65,10 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         dataset_binary_images = self.process_image_dataset_gray_scaled_to_binary_with_threshold(dataset_gray_scale)
 
         ## Generate image containing only grid lines
-        list_of_image_with_grid_lines = self.generate_list_of_image_with_grid_lines(dataset_binary_images)
+        dataset_only_grid_lines = self.process_image_dataset_binary_to_grid_lines(dataset_binary_images)
 
         ## Contour Algorithm
+        datatset_contour_list_per_image = self.generate_image_dataset_binary_grid_to_list_of_contours(dataset_only_grid_lines)
         """
         With this simplified image, we use a border following algorithm [25] to generate a hierarchical tree of contours. 
         Each contour is compressed into four points, storing only corners of each quadrilateral. Any contour which is 
@@ -90,7 +92,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         :param dataset: image dataset with images in RGB format and the corresponding text as target values
         :return: dataset with images in gray-scale format
         """
-        dataset = dataset.map(lambda img: {"image": img["image"].convert("L")})
+        dataset = dataset.map(lambda data_point: {"image": data_point["image"].convert("L")})
 
         return dataset
 
@@ -102,7 +104,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         :return: dataset with images in binary format
         """
         try:
-            dataset = dataset.map(lambda  img: {"image": self.process_image_gray_scaled_to_binary_with_threshold(img["image"])})
+            dataset = dataset.map(lambda  data_point: {"image": self.process_image_gray_scaled_to_binary_with_threshold(data_point["image"])})
         except Exception as e:
             logger.error(f"Error during processing gray-scaled images to binary images: {str(e)}")
             raise
@@ -136,37 +138,125 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
             logger.error(f"Error when converting to binary: {str(e)}")
             raise
 
-    ##TODO: Implement Method
-    def generate_list_of_image_with_grid_lines(self, listOfImages: list):
-        res_img_list = []
-
-        for img in listOfImages:
-            res_img_list.append(self.generate_image_containing_only_grid_lines(img))
-
-        return res_img_list
-
-    ##TODO: Implement Method
-    def generate_image_containing_only_grid_lines(self, image):
+    def process_image_dataset_binary_to_grid_lines(self, dataset: Dataset) -> Dataset:
         """
-        Hough Transform
-        Use two long, thin kernels (one horizontal and one vertical) with sizes relative to input image dimensions,
-        and morphological operations (erosion followed by dilation) with those kernels to generate an image containing
-        only grid lines. - Digitization of Handwritten Chess Scoresheets with a BiLSTM Network
+        Using morphological operations to generate a binary image with only grid lines
 
-        :param image:
-        :return:
+        :param dataset: image dataset with images in binary format and the corresponding text as target values
+        :return: binary image with only grid lines
+        """
+        try:
+         dataset = dataset.map(lambda data_point: {"image": self.process_binary_image_to_grid_lines(data_point["image"])})
+        except Exception as e:
+            logger.error(f"Error during processing binary images to grid lines: {str(e)}")
+            raise
+
+        logger.info(f"Complete Dataset with images in grid lines processed successfully!")
+
+        return dataset
+
+    def process_binary_image_to_grid_lines(self, image):
+        """
+        Using morphological operations to generate a binary image with only grid lines
+
+        :param image: image in binary format
+        :return: binary image with only grid lines
         """
 
+        # Guard clauses
+        if image is None:
+            raise ValueError("Input image can not be None.")
 
+        # Convert to numpy
+        np_img = np.array(image)
 
+        # Invert image so lines are white
+        np_img = cv2.bitwise_not(np_img)
 
-    ##TODO: Implement Method
-    def generate_contour_image(self, image):
-        res_img = None
+        # Define kernel length
+        horizontal_kernel_len = np_img.shape[1] // 40
+        vertical_kernel_len = np_img.shape[0] // 40
+
+        # Define kernel (matrix)
+        horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (horizontal_kernel_len, 1))
+        vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, vertical_kernel_len))
+
+        # Apply morphological operations with horizontal line
+        ## Erosion
+        horizontal_lines = cv2.erode(np_img, horizontal_kernel, iterations=1)
+        ## Dilation
+        horizontal_lines = cv2.dilate(horizontal_lines, horizontal_kernel, iterations=1)
+
+        # Apply morphological operations with vertical line
+        ## Erosion
+        vertical_lines = cv2.erode(np_img, vertical_kernel, iterations=1)
+        ## Dilation
+        vertical_lines = cv2.dilate(vertical_lines, vertical_kernel, iterations=1)
+
+        # Bring processed images together
+        grid_lines = cv2.add(horizontal_lines,vertical_lines)
+
+        # Convert to PIL.Image
+        res_img = Image.fromarray(grid_lines)
 
         return res_img
 
-        ##TODO: Implement Method
+    def generate_image_dataset_binary_grid_to_list_of_contours(self, dataset: Dataset) -> Dataset:
+        """
+        Creates a list of contours per image, storing four point for the corners of each quadrilateral
+
+        :param dataset: image dataset with images in binary format with grid lines and the corresponding text as target values
+        :return: dataset with list of contours and the corresponding list of labels
+        """
+
+        # Replace each image with the list of the contours for the image
+        dataset = dataset.map(lambda datapoint: {"image": self.generate_binary_grid_image_to_list_of_contours(datapoint["image"])})
+
+        return dataset
+
+    def generate_binary_grid_image_to_list_of_contours(self, image):
+        """
+        Creates a list of contours for the image. The contours store four points for the corners of each quadrilateral
+
+        :param image: image in binary format with grid lines
+        :return: list of contours
+        """
+
+        # Convert image to numpy
+        np_img = np.array(image)
+
+        # Find contours
+        contours, hierarchy = cv2.findContours(np_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Compress each contour into four points, storing only corners of each quadrilateral
+        simplified_contours = []
+        for contour in contours:
+            # Calculate perimeter of contour
+            perimeter = cv2.arcLength(contour, True)
+
+            # Approximate contour to rectangle
+            ## Approximate contour to rectangle with a certain precision
+            approx = cv2.approxPolyDP(contour, 0.04 * perimeter, True)
+
+            # Add just contours with 4 points to simplified_contours list
+            if len(approx) == 4:
+                simplified_contours.append(approx)
+
+        # Any contour which is significantly larger or smaller than the size of a single move-box can be ignored.
+        avg_area = np.mean([cv2.contourArea(contour) for contour in simplified_contours])
+        filtered_contours = [contour for contour in simplified_contours if
+                             0.5 * avg_area < cv2.contourArea(contour) < 1.5 * avg_area]
+
+        # Sort contours based on their positions relative to one another
+        sorted_contours = sorted(filtered_contours, key=lambda contour: self.get_contour_precendence(contour))
+
+        return sorted_contours
+
+    def get_contour_precendence(self, contour):
+        x, y, w, h = cv2.boundingRect(contour)
+        return (y // 30) * 1000 + x # 30 is a threshold for moves per column
+
+    ##TODO: Implement Method
     def map_move_boxes_to_label(self, dataset: Dataset) -> Dataset:
         """Abstract method to map move boxes to a label"""
         return dataset
