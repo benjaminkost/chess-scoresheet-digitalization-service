@@ -34,38 +34,9 @@ class PreprocessingStrategy(ABC):
         pass
 
 class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
-    def process_image_dataset_with_grayscale(self, dataset: Dataset) -> Dataset:
-        dataset = dataset.map(lambda x: {"image": x["image"].convert("L")})
-
-        return dataset
-
-    def process_image_gray_scaled_to_binary_with_threshold(self, image):
-        """
-
-        :param image:
-        :return:
-        """
-        threshold = otsu_threshold(image)
-
-        res_image = image.point(lambda x: 0 if x < threshold else 255, '1')
-
-        return res_image
-
-    def process_image_dataset_gray_scaled_to_binary_with_threshold(self, dataset: Dataset) -> Dataset:
-        """
-        The idea of this method cames from https://ieeexplore.ieee.org/document/4310076
-
-        :param dataset:
-        :return:
-        """
-
-        dataset = dataset.map(lambda  example: {"image": self.process_image_gray_scaled_to_binary_with_threshold(example["image"])})
-
-        return dataset
 
     def preprocess_image_dataset(self, dataset: Dataset) -> Dataset:
         """Abstract method to preprocess an image dataset"""
-
         res_dataset = None
 
         # Guard clauses
@@ -84,14 +55,14 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         return res_dataset
 
-    ##TODO: Implement Method
+        ##TODO: Implement Method
     def generate_move_boxes_from_image_dataset(self, dataset: Dataset) -> Dataset:
         """Abstract method to generate move boxes from an image dataset"""
         ## Convert images from RGB to gray-scale
-        dataset_gray_scale = self.process_image_dataset_with_grayscale(dataset)
+        dataset_gray_scale = self.process_image_dataset_rgb_to_grayscale(dataset)
 
         ## Convert gray-scale images to binary images with otsu's method
-        dataset_binary_images = self.process_image_dataset_gray_scaled_to_binary_with_threshold(dataset_gray_scale)
+        dataset_binary_images = self.process_image_dataset_gray_scaled_to_binary_with_threshold_with_opencv(dataset_gray_scale)
 
         ## Generate image containing only grid lines
         list_of_image_with_grid_lines = self.generate_list_of_image_with_grid_lines(dataset_binary_images)
@@ -113,56 +84,100 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         return dataset_binary_images
 
-    ##TODO: Implement Method
-    def generate_image_containing_only_grid_lines(self, image):
+    def process_image_dataset_rgb_to_grayscale(self, dataset: Dataset) -> Dataset:
         """
-        Use two long, thin kernels (one horizontal and one vertical) with sizes relative to input image dimensions,
-        and morphological operations (erosion followed by dilation) with those kernels to generate an image containing
-        only grid lines. - Digitization of Handwritten Chess Scoresheets with a BiLSTM Network
+        Using the luminosity method: grayscale = 0.299 * R + 0.587 * G + 0.114 * B
 
-        :param image:
-        :return:
+        :param dataset: image dataset with images in RGB format and the corresponding text as target values
+        :return: dataset with images in gray-scale format
         """
+        dataset = dataset.map(lambda img: {"image": img["image"].convert("L")})
 
-        # Konvertiere PIL Image zu numpy array für OpenCV
+        return dataset
+
+    def process_image_dataset_gray_scaled_to_binary_with_threshold_with_opencv(self, dataset: Dataset) -> Dataset:
+        """
+        Making the images in the dataset binary with Otsu's method
+
+        :param dataset: image dataset with images in gray-scale format and the corresponding text as target values
+        :return: dataset with images in binary format
+        """
         try:
-            img_array = np.array(image).astype(np.uint8)
+            dataset = dataset.map(lambda  img: {"image": self.process_image_gray_scaled_to_binary_with_threshold_with_opencv(img["image"])})
         except Exception as e:
-            print("Error converting PIL Image to numpy array: " + str(e))
-            return None
+            logger.error(f"Error during processing gray-scaled images to binary images: {str(e)}")
+            raise
 
-        logger.info("Image shape: " + str(img_array.shape))
+        logger.info(f"Complete Dataset with images in binary format processed successfully!")
 
-        # Bestimme die Kernel-Größen relativ zur Bildgröße
-        height, width = img_array.shape
-        horizontal_size = width // 3
-        vertical_size = height // 25
+        return dataset
 
-        logger.info("Horizontal size: " + str(horizontal_size) + ", Vertical size: " + str(vertical_size))
+    def process_image_gray_scaled_to_binary_with_threshold_with_opencv(self, image):
+        """
+        Uses Otsu's method to binarize the image.
 
-        # Horizontaler Kernel
-        horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (horizontal_size, 1))
+        :param image: image in gray-scale format
+        :return: image in binary format
+        """
+        if image is None:
+            raise ValueError("Input image can not be None.")
 
-        # Vertikaler Kernel
-        vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, vertical_size))
+        if not isinstance(image, Image.Image):
+            raise ValueError(f"The input image must be of type PIL.Image, but is {type(image)}")
 
-        # Horizontale Linien extrahieren
         try:
-            horizontal = cv2.erode(img_array, horizontal_kernel)
-            horizontal = cv2.dilate(horizontal, horizontal_kernel)
+            np_image = np.array(image)
+            ret, thresh = cv2.threshold(np_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            binary_image = Image.fromarray(thresh)
+
+            logger.debug(f"Image was converted to binary with the threshold of {ret}")
+            return binary_image
+
         except Exception as e:
-            print("Error during horizontal line extraction: " + str(e))
-            return None
+            logger.error(f"Error when converting to binary: {str(e)}")
+            raise
 
-        # Vertikale Linien extrahieren
-        vertical = cv2.erode(img_array, vertical_kernel)
-        vertical = cv2.dilate(vertical, vertical_kernel)
+    def process_image_dataset_gray_scaled_to_binary_with_threshold_with_pythreshold(self, dataset: Dataset) -> Dataset:
+        """
+        Making the images in the dataset binary with Otsu's method
 
-        # Kombiniere horizontale und vertikale Linien
-        grid_lines = cv2.addWeighted(horizontal, 0.5, vertical, 0.5, 0)
+        :param dataset: image dataset with images in gray-scale format and the corresponding text as target values
+        :return: dataset with images in binary format
+        """
+        try:
+            dataset = dataset.map(lambda  img: {"image": self.process_image_gray_scaled_to_binary_with_threshold_with_pythreshold(img["image"])})
+        except Exception as e:
+            logger.error(f"Error during processing gray-scaled images to binary images: {str(e)}")
+            raise
 
-        # Konvertiere zurück zu PIL Image
-        return Image.fromarray(grid_lines)
+        logger.info(f"Complete Dataset with images in binary format processed successfully!")
+
+        return dataset
+
+    def process_image_gray_scaled_to_binary_with_threshold_with_pythreshold(self, image):
+        """
+        Uses Otsu's method to binarize the image.
+
+        :param image: image in gray-scale format
+        :return: image in binary format
+        """
+        if image is None:
+            raise ValueError("Input image can not be None.")
+
+        if not isinstance(image, Image.Image):
+            raise ValueError(f"The input image must be of type PIL.Image, but is {type(image)}")
+
+        try:
+            threshold = otsu_threshold(image)
+            binary_image = image.point(lambda p: 0 if p < threshold else 255, '1')
+            binary_image = binary_image.astype(np.uint8) * 255
+
+            logger.debug(f"Image was converted to binary with the threshold of {threshold}")
+            return binary_image
+
+        except Exception as e:
+            logger.error(f"Error when converting to binary: {str(e)}")
+            raise
 
     ##TODO: Implement Method
     def generate_list_of_image_with_grid_lines(self, listOfImages: list):
@@ -172,6 +187,21 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
             res_img_list.append(self.generate_image_containing_only_grid_lines(img))
 
         return res_img_list
+
+    ##TODO: Implement Method
+    def generate_image_containing_only_grid_lines(self, image):
+        """
+        Hough Transform
+        Use two long, thin kernels (one horizontal and one vertical) with sizes relative to input image dimensions,
+        and morphological operations (erosion followed by dilation) with those kernels to generate an image containing
+        only grid lines. - Digitization of Handwritten Chess Scoresheets with a BiLSTM Network
+
+        :param image:
+        :return:
+        """
+
+
+
 
     ##TODO: Implement Method
     def generate_contour_image(self, image):
