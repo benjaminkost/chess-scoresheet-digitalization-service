@@ -5,7 +5,6 @@ from PIL import Image
 import cv2
 import numpy as np
 from datasets import Dataset, DatasetDict
-from pythreshold.global_th import otsu_threshold
 
 # Configure Logger:
 # ANSI Escape Code for white letters
@@ -62,7 +61,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         dataset_gray_scale = self.process_image_dataset_rgb_to_grayscale(dataset)
 
         ## Convert gray-scale images to binary images with otsu's method
-        dataset_binary_images = self.process_image_dataset_gray_scaled_to_binary_with_threshold_with_opencv(dataset_gray_scale)
+        dataset_binary_images = self.process_image_dataset_gray_scaled_to_binary_with_threshold(dataset_gray_scale)
 
         ## Generate image containing only grid lines
         list_of_image_with_grid_lines = self.generate_list_of_image_with_grid_lines(dataset_binary_images)
@@ -95,7 +94,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         return dataset
 
-    def process_image_dataset_gray_scaled_to_binary_with_threshold_with_opencv(self, dataset: Dataset) -> Dataset:
+    def process_image_dataset_gray_scaled_to_binary_with_threshold(self, dataset: Dataset) -> Dataset:
         """
         Making the images in the dataset binary with Otsu's method
 
@@ -103,7 +102,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         :return: dataset with images in binary format
         """
         try:
-            dataset = dataset.map(lambda  img: {"image": self.process_image_gray_scaled_to_binary_with_threshold_with_opencv(img["image"])})
+            dataset = dataset.map(lambda  img: {"image": self.process_image_gray_scaled_to_binary_with_threshold(img["image"])})
         except Exception as e:
             logger.error(f"Error during processing gray-scaled images to binary images: {str(e)}")
             raise
@@ -112,7 +111,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         return dataset
 
-    def process_image_gray_scaled_to_binary_with_threshold_with_opencv(self, image):
+    def process_image_gray_scaled_to_binary_with_threshold(self, image):
         """
         Uses Otsu's method to binarize the image.
 
@@ -131,48 +130,6 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
             binary_image = Image.fromarray(thresh)
 
             logger.debug(f"Image was converted to binary with the threshold of {ret}")
-            return binary_image
-
-        except Exception as e:
-            logger.error(f"Error when converting to binary: {str(e)}")
-            raise
-
-    def process_image_dataset_gray_scaled_to_binary_with_threshold_with_pythreshold(self, dataset: Dataset) -> Dataset:
-        """
-        Making the images in the dataset binary with Otsu's method
-
-        :param dataset: image dataset with images in gray-scale format and the corresponding text as target values
-        :return: dataset with images in binary format
-        """
-        try:
-            dataset = dataset.map(lambda  img: {"image": self.process_image_gray_scaled_to_binary_with_threshold_with_pythreshold(img["image"])})
-        except Exception as e:
-            logger.error(f"Error during processing gray-scaled images to binary images: {str(e)}")
-            raise
-
-        logger.info(f"Complete Dataset with images in binary format processed successfully!")
-
-        return dataset
-
-    def process_image_gray_scaled_to_binary_with_threshold_with_pythreshold(self, image):
-        """
-        Uses Otsu's method to binarize the image.
-
-        :param image: image in gray-scale format
-        :return: image in binary format
-        """
-        if image is None:
-            raise ValueError("Input image can not be None.")
-
-        if not isinstance(image, Image.Image):
-            raise ValueError(f"The input image must be of type PIL.Image, but is {type(image)}")
-
-        try:
-            threshold = otsu_threshold(image)
-            binary_image = image.point(lambda p: 0 if p < threshold else 255, '1')
-            binary_image = binary_image.astype(np.uint8) * 255
-
-            logger.debug(f"Image was converted to binary with the threshold of {threshold}")
             return binary_image
 
         except Exception as e:
