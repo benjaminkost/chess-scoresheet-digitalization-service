@@ -69,12 +69,11 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         ## Contour Algorithm
         datatset_contour_list_per_image = self.generate_image_dataset_binary_grid_to_list_of_contours(dataset_only_grid_lines)
+
+        ## Cut out boxes with padding, give them a name and map them to the corresponding label
         """
-        With this simplified image, we use a border following algorithm [25] to generate a hierarchical tree of contours. 
-        Each contour is compressed into four points, storing only corners of each quadrilateral. Any contour which is 
-        significantly larger or smaller than the size of a single move-box 
-        (again, calculated relative to the total image size) can be ignored. The final contours are sorted based on 
-        their positions relative to one another, and each is labeled by game, move, and player. Finally, we apply a 
+        The final contours are sorted based on their positions relative to one another(Done), and each 
+        is labeled by game, move, and player. Finally, we apply a 
         perspective correction to restore the original rectangular shape of the move-boxes and crop each of them with 
         a padding on the top and bottom of 15% and 25%, respectively, since written moves overflow the bottom of their 
         box more often and more severely than the top. This process is displayed in Figure 3. We did not pad box sides 
@@ -226,7 +225,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         np_img = np.array(image)
 
         # Find contours
-        contours, hierarchy = cv2.findContours(np_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(np_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
         # Compress each contour into four points, storing only corners of each quadrilateral
         simplified_contours = []
@@ -243,18 +242,83 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
                 simplified_contours.append(approx)
 
         # Any contour which is significantly larger or smaller than the size of a single move-box can be ignored.
-        avg_area = np.mean([cv2.contourArea(contour) for contour in simplified_contours])
-        filtered_contours = [contour for contour in simplified_contours if
-                             0.5 * avg_area < cv2.contourArea(contour) < 1.5 * avg_area]
+        median_area = np.median([cv2.contourArea(contour) for contour in simplified_contours])
+        filtered_contours = [contour for contour in simplified_contours if 0.5 * median_area <= cv2.contourArea(contour) <= 1.5 * median_area]
 
-        # Sort contours based on their positions relative to one another
-        sorted_contours = sorted(filtered_contours, key=lambda contour: self.get_contour_precendence(contour))
+        if len(filtered_contours) == 120:
+            # Sort contours based on their positions relative to one another
+            sorted_contours = self.get_contour_precendence(filtered_contours)
+            return sorted_contours
+        elif len(filtered_contours) < 120:
+            raise ValueError(f"{len(filtered_contours)} are not enough contours found. Should be 120!")
+        elif len(filtered_contours) > 120:
+            raise ValueError(f"{len(filtered_contours)} ar too many contours found. Should be 120")
+        return None
 
-        return sorted_contours
+    def get_contour_precendence(self, contours):
+        """
+        Determine a sorted list of contours based on their positions relative to one another according to a chess scoresheet.
 
-    def get_contour_precendence(self, contour):
-        x, y, w, h = cv2.boundingRect(contour)
-        return (y // 30) * 1000 + x # 30 is a threshold for moves per column
+        :param contours: tuple of lists with 4 points for the corners of each quadrilateral
+        :return: sorted list of contours based on their positions relative to one another according to a chess scoresheet
+        """
+
+        # Define focal point of each contour (move box)
+        focal_points = []
+        for contour in contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            focal_points.append((x + w / 2, y + h / 2, contour)) #contour
+
+        # Normalize focal points so that clear columns and lines can be determined
+        focal_points = self.normalize_focal_points(focal_points)
+
+        # Sort focal points based on their x-coordinate
+        sorted_focal_points = [item[2] for item in sorted(focal_points, key=lambda x: (x[1], x[0]))]
+        res_contours = self.move_every_third_and_fourth_to_end(sorted_focal_points)
+
+        return res_contours
+
+    def normalize_focal_points(self, focal_points):
+        # Calculate max x-Value
+        max_x_value = max([x for x, y, contour in focal_points])
+        # Calculate max y-Value
+        max_y_value = max([y for x, y, contour in focal_points])
+
+        # Calculate possible margin
+        x_margin = max_x_value/300
+        y_margin = max_y_value/400
+
+        # Normalize focal points
+        for index, focal_point_perspective in enumerate(focal_points):
+            for index, focal_points_others in enumerate(focal_points):
+                # Make x-Value of focal point the same if they are very close to another focal point
+                if abs(focal_point_perspective[0] - focal_points_others[0]) <= x_margin:
+                    tmp_list_of_tuple = list(focal_points[index])
+                    tmp_list_of_tuple[0] = focal_point_perspective[0]
+                    res_tuple = tuple(tmp_list_of_tuple)
+                    focal_points[index] = res_tuple
+                # Make y-Value of focal point the same if they are very close to another focal point
+                if abs(focal_point_perspective[1] - focal_points_others[1]) <= y_margin:
+                    tmp_list_of_tuple = list(focal_points[index])
+                    tmp_list_of_tuple[1] = focal_point_perspective[1]
+                    res_tuple = tuple(tmp_list_of_tuple)
+                    focal_points[index] = res_tuple
+
+        return focal_points
+
+    def move_every_third_and_fourth_to_end(self, focal_points):
+        result = []
+        to_move = []
+
+        for i, item in enumerate(focal_points):
+            # Jeder 3. (Index 2, 6, 10, ...) oder 4. (Index 3, 7, 11, ...)
+            if (i % 4 == 2) or (i % 4 == 3):
+                to_move.append(item)
+            else:
+                result.append(item)
+
+        result.extend(to_move)
+        return result
 
     ##TODO: Implement Method
     def map_move_boxes_to_label(self, dataset: Dataset) -> Dataset:
