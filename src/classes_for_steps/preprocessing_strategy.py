@@ -1,10 +1,12 @@
 import logging
 from abc import ABC, abstractmethod
+from pyexpat import features
+
 import PIL
 from PIL import Image
 import cv2
 import numpy as np
-from datasets import Dataset, DatasetDict
+from datasets import Dataset, DatasetDict, Features, Image
 from pandas.compat.numpy.function import SORT_DEFAULTS
 
 # Configure Logger:
@@ -71,6 +73,9 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         datatset_contour_list_per_image = self.generate_image_dataset_binary_grid_to_list_of_contours(dataset_only_grid_lines)
 
         ## Cut out boxes with padding, give them a name and map them to the corresponding label
+        dataset_move_boxes_with_labels = (
+            self.generate_from_contour_dataset_and_image_dataset_cut_out_image_to_label_dataset(
+                datatset_contour_list_per_image, "image", dataset_gray_scale,"image"))
         """
         The final contours are sorted based on their positions relative to one another(Done), and each 
         is labeled by game, move, and player. Finally, we apply a 
@@ -242,13 +247,15 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
                 simplified_contours.append(approx)
 
         # Any contour which is significantly larger or smaller than the size of a single move-box can be ignored.
-        median_area = np.median([cv2.contourArea(contour) for contour in simplified_contours])
+        median_area = float(np.median([cv2.contourArea(contour) for contour in simplified_contours]))
         filtered_contours = [contour for contour in simplified_contours if 0.5 * median_area <= cv2.contourArea(contour) <= 1.5 * median_area]
 
         if len(filtered_contours) == 120:
             # Sort contours based on their positions relative to one another
             sorted_contours = self.get_contour_precendence(filtered_contours)
-            return sorted_contours
+            # Sort points in the 4 points of the corners of each move box contour
+            sorted_contours_with_sorted_points = self.sort_points_in_list_of_contours(sorted_contours)
+            return sorted_contours_with_sorted_points
         elif len(filtered_contours) < 120:
             raise ValueError(f"{len(filtered_contours)} are not enough contours found. Should be 120!")
         elif len(filtered_contours) > 120:
@@ -319,6 +326,106 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         result.extend(to_move)
         return result
+
+    def sort_points_in_list_of_contours(self, list_of_contours: list) -> list:
+        """
+        Sort points in the 4 points of the corners of each move box contour. So the first point is the top left corner,
+        the second point is the top right corner, the third point is the bottom right corner,
+        and the fourth point is in the bottom left corner.
+        Comment: And delete unnecessary dimension for point
+
+        :param list_of_contours:
+        :return:
+        """
+        res_list_of_contours = list_of_contours.copy()
+
+        # Delete unnecessary dimension
+        for index_contours, contour in enumerate(list_of_contours):
+            res_list_of_contours[index_contours] = contour.squeeze()
+
+        # Sort points in the 4 points of the corners of each move box contour
+        for index_contours, contour in enumerate(res_list_of_contours):
+            sorted_corners = []
+            # Sorted for the top corners
+            top_left_corner = sorted(contour, key=lambda point: point[1])
+            # Select the two top corners
+            top_corners = top_left_corner[0:2]
+            # Sort the top corners based on their x-coordinate
+            top_corners = sorted(top_corners, key=lambda point: point[0])
+            # Add the top corners to the sorted_corners list
+            sorted_corners.extend(top_corners)
+            # Select the bottem corners
+            bottom_corners = top_left_corner[2:4]
+            # Sort the bottem corners based on their x-coordinate
+            bottom_corners = sorted(bottom_corners, key=lambda point: point[0], reverse=True)
+            # Add the bottem corners to the sorted_corners list
+            sorted_corners.extend(bottom_corners)
+            sorted_corners = np.array(sorted_corners)
+            # Add the sorted_corners list to the res_list_of_contours list
+            res_list_of_contours[index_contours] = sorted_corners
+
+        return res_list_of_contours
+
+    def generate_from_contour_dataset_and_image_dataset_cut_out_image_to_label_dataset(self,
+                                                                                       dataset_contours: Dataset,
+                                                                                       contour_column: str,
+                                                                                       dataset_images: Dataset,
+                                                                                       image_column: str, label_column: str) -> Dataset:
+        """
+
+
+        :param dataset_contours:
+        :param dataset_images:
+        :return:
+        """
+        cut_out_image_to_label_list = []
+
+        if len(dataset_contours["train"]) != len(dataset_images["train"]):
+            raise ValueError(f"The two dataset are not the same size: "
+                             f"\nContour dataset: {len(dataset_contours["train"])}, Image dataset: {len(dataset_images["train"])}")
+
+        length_of_dataset = len(dataset_contours["train"])
+
+        for i in range(0, length_of_dataset):
+            # Define list of contours for the given image
+            print(f"Image dataset: {dataset_images["train"][i]}, Contour dataset: {dataset_contours["train"][i]}")
+            list_of_contours = dataset_contours["train"][i][contour_column]
+            image = dataset_images["train"][i][image_column]
+            list_of_labels = dataset_images["train"][i][label_column]
+            # Iterate through contour list and cut out images
+            for index_contours, contour in enumerate(list_of_contours):
+                if (index_contours+1) <= len(list_of_labels):
+                    cut_out_image = self.generate_from_four_contour_points_and_image_a_cut_out_image(list_of_contours, image)
+                    label = list_of_labels[index_contours]
+                    dict_element = {label:cut_out_image}
+                    cut_out_image_to_label_list.append(dict_element)
+                else:
+                    # Do not cut out images where no label exist
+                    break
+
+        # Define dataset object
+        features = Features({
+            "label": str,
+            "image": Image()
+        })
+        # Convert list of dicts to dataset object
+        dataset_cut_out_image_to_label_dataset = Dataset.from_list(cut_out_image_to_label_list, features=features)
+
+        return dataset_cut_out_image_to_label_dataset
+
+    def generate_from_four_contour_points_and_image_a_cut_out_image(self, list_contours, image: Image):
+        """
+        Cut out image with contours defined in list_contours from the bigger image
+
+        :param list_contours:
+        :param image:
+        :return:
+        """
+        top_left_corner = list_contours[0]
+        bottom_right_corner = list_contours[2]
+        cut_out_image = image.crop(top_left_corner[0], top_left_corner[1], bottom_right_corner[0], bottom_right_corner[1])
+
+        return cut_out_image
 
     ##TODO: Implement Method
     def map_move_boxes_to_label(self, dataset: Dataset) -> Dataset:
