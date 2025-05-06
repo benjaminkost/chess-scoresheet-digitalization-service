@@ -1,13 +1,11 @@
 import logging
 from abc import ABC, abstractmethod
-from pyexpat import features
-
 import PIL
+import datasets
 from PIL import Image
 import cv2
 import numpy as np
-from datasets import Dataset, DatasetDict, Features, Image
-from pandas.compat.numpy.function import SORT_DEFAULTS
+from datasets import Dataset, DatasetDict, Features
 
 # Configure Logger:
 # ANSI Escape Code for white letters
@@ -38,8 +36,13 @@ class PreprocessingStrategy(ABC):
 class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
     def preprocess_image_dataset(self, dataset: Dataset) -> Dataset:
-        """Abstract method to preprocess an image dataset"""
-        res_dataset = None
+        """
+        Change a dataset of images and labels, so that the image is splitted into smaller images
+        (containing the move boxes) and the list of labels is splitted into the label which is mapped to the smaller image
+
+        :param dataset:
+        :return:
+        """
 
         # Guard clauses
         if dataset is None:
@@ -49,75 +52,129 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         if type(dataset["train"]["image"][0]) != Image.Image and type(dataset["train"]["image"][0]) != PIL.PngImagePlugin.PngImageFile:
             raise ValueError("Dataset must contain images, but is type of: " + str(type(dataset["train"]["image"][0])))
 
-        # Cut out move boxes
-        processed_img_dataset = self.generate_move_boxes_from_image_dataset(dataset)
+        # Initalizing resulting dataset
+        dataset_move_boxes_with_labels = None
 
-        # Map image to label
-        res_dataset = self.map_move_boxes_to_label(processed_img_dataset)
+        ## Convert dataset to list
+        list_dataset = self.convert_dataset_to_list(dataset, "train", "image", "labels")
 
-        return res_dataset
+        try:
+            ## Convert images (from RGB) to gray-scale
+            list_of_gray_scaled = self.process_image_dataset_rgb_to_grayscale(list_dataset)
 
-    ##TODO: Implement Method
-    def generate_move_boxes_from_image_dataset(self, dataset: Dataset) -> Dataset:
-        """Abstract method to generate move boxes from an image dataset"""
-        ## Convert images from RGB to gray-scale
-        dataset_gray_scale = self.process_image_dataset_rgb_to_grayscale(dataset)
+            ## Convert gray-scale images to binary images with otsu's method
+            list_of_binary_images = self.process_image_dataset_gray_scaled_to_binary_with_threshold(list_of_gray_scaled)
 
-        ## Convert gray-scale images to binary images with otsu's method
-        dataset_binary_images = self.process_image_dataset_gray_scaled_to_binary_with_threshold(dataset_gray_scale)
+            ## Generate image containing only grid lines
+            list_of_only_grid_lines = self.process_image_dataset_binary_to_grid_lines(list_of_binary_images)
 
-        ## Generate image containing only grid lines
-        dataset_only_grid_lines = self.process_image_dataset_binary_to_grid_lines(dataset_binary_images)
+            ## Contour Algorithm
+            column_for_contours = "list_of_contours"
+            column_for_labels = "labels"
+            list_of_contour_list_per_image = self.generate_image_dataset_binary_grid_to_list_of_contours(list_of_only_grid_lines, column_for_contours, column_for_labels)
 
-        ## Contour Algorithm
-        datatset_contour_list_per_image = self.generate_image_dataset_binary_grid_to_list_of_contours(dataset_only_grid_lines)
+            ## Cut out boxes with padding, give them a name and map them to the corresponding label
+            column_for_contours = "list_of_contours"
+            image_column = "image"
+            label_column = "labels"
+            dataset_move_boxes_with_labels = (
+               self.generate_from_contour_list_and_image_list_cut_out_image_to_label_dataset(
+                   list_of_contour_list_per_image, column_for_contours, list_of_gray_scaled, image_column, label_column))
+        except ValueError as e:
+            logger.error("ValueError: %s", e)
+        except Exception as e:
+            logger.error("Error: %s", e)
 
-        ## Cut out boxes with padding, give them a name and map them to the corresponding label
-        dataset_move_boxes_with_labels = (
-            self.generate_from_contour_dataset_and_image_dataset_cut_out_image_to_label_dataset(
-                datatset_contour_list_per_image, "image", dataset_gray_scale,"image"))
+        return dataset_move_boxes_with_labels
+
+    def convert_dataset_to_list(self, dataset: Dataset, split_column: str, feature_column: str, label_column: str) -> list:
         """
-        The final contours are sorted based on their positions relative to one another(Done), and each 
-        is labeled by game, move, and player. Finally, we apply a 
-        perspective correction to restore the original rectangular shape of the move-boxes and crop each of them with 
-        a padding on the top and bottom of 15% and 25%, respectively, since written moves overflow the bottom of their 
-        box more often and more severely than the top. This process is displayed in Figure 3. We did not pad box sides 
-        because chess moves are short, and the players rarely need to cross the side boundaries. This method of 
-        pre-processing is nearly agnostic to scoresheet style and will work with any scoresheet style, which includes 
-        4-columns and solid grid lines.
+        Convert dataset of a defined split to list
+
+        :param dataset:
+        :return: list of split from dataset
         """
 
-        return dataset_binary_images
+        # Initialize value to count how many images were not processed
+        count_not_processed_images = 0
 
-    def process_image_dataset_rgb_to_grayscale(self, dataset: Dataset) -> Dataset:
+        # Select split of dataset
+        dataset_of_split = dataset[split_column]
+
+        # Resulting list
+        res_list_of_dataset = []
+
+        # List of dataset
+        for i in range(0, len(dataset_of_split)):
+            try:
+                # Dictionary of feature and label
+                dict_element = {feature_column: dataset_of_split[i][feature_column], label_column: dataset_of_split[i][label_column]}
+                res_list_of_dataset.append(dict_element)
+            except Exception as e:
+                count_not_processed_images +=1
+                raise Exception(f"The image with the index {i} could not be converted to list element "
+                                f"will be assigned as \"image\":None for further processing.")
+
+        count_of_correctly_processed_images = len(dataset_of_split)-count_not_processed_images
+        logger.info(f"{count_of_correctly_processed_images} out of {len(dataset_of_split)} images in the dataset "
+                f"were successfully processed into a list "
+                f"and {count_not_processed_images} elements were excluded!")
+
+        return res_list_of_dataset
+
+    def process_image_dataset_rgb_to_grayscale(self, list_of_dataset: list) -> list:
         """
         Using the luminosity method: grayscale = 0.299 * R + 0.587 * G + 0.114 * B
 
-        :param dataset: image dataset with images in RGB format and the corresponding text as target values
+        :param list_of_dataset: image dataset with images in RGB format and the corresponding text as target values
         :return: dataset with images in gray-scale format
         """
-        dataset = dataset.map(lambda data_point: {"image": data_point["image"].convert("L")})
 
-        return dataset
+        # Initialize value to count how many images were not processed
+        count_not_processed_images = 0
 
-    def process_image_dataset_gray_scaled_to_binary_with_threshold(self, dataset: Dataset) -> Dataset:
+        for i in range(0, len(list_of_dataset)):
+            list_of_dataset[i]["image"] = list_of_dataset[i]["image"].convert("L")
+
+        count_of_correctly_processed_images = len(list_of_dataset)-count_not_processed_images
+        logger.info(f"All images in the list were successfully processed into gray scale format!")
+
+        return list_of_dataset
+
+    def process_image_dataset_gray_scaled_to_binary_with_threshold(self, list_of_grayscaled_images: list) -> list:
         """
         Making the images in the dataset binary with Otsu's method
 
-        :param dataset: image dataset with images in gray-scale format and the corresponding text as target values
+        :param list_of_grayscaled_images: image dataset with images in gray-scale format and the corresponding text as target values
         :return: dataset with images in binary format
         """
-        try:
-            dataset = dataset.map(lambda  data_point: {"image": self.process_image_gray_scaled_to_binary_with_threshold(data_point["image"])})
-        except Exception as e:
-            logger.error(f"Error during processing gray-scaled images to binary images: {str(e)}")
-            raise
+        # Initialize value to count how many images were not processed
+        count_not_processed_images = 0
 
-        logger.info(f"Complete Dataset with images in binary format processed successfully!")
+        # List of thresholds to calculate Average threshold
+        thresholds = []
 
-        return dataset
+        for i in range(0, len(list_of_grayscaled_images)):
+            try:
+                threshold, list_of_grayscaled_images[i]["image"] = self.process_image_gray_scaled_to_binary_with_threshold(list_of_grayscaled_images[i]["image"])
+                thresholds.append(threshold)
+            except Exception as e:
+                list_of_grayscaled_images[i]["image"] = None
+                count_not_processed_images +=1
+                logger.error(f"Error during processing image with index {i}, with error: {e}")
 
-    def process_image_gray_scaled_to_binary_with_threshold(self, image):
+        # Calculate average threshold
+        avg_threshold = round((sum(thresholds) / len(thresholds)), 2)
+
+        # Calculate successfully processed images
+        count_of_correctly_processed_images = len(list_of_grayscaled_images)-count_not_processed_images
+        logger.info(f"{count_of_correctly_processed_images} out of {len(list_of_grayscaled_images)} images in the list "
+                    f"were successfully processed into binary scale format with an average threshold of {avg_threshold} "
+                    f"and {count_not_processed_images} where assigned with \"image\":None!")
+
+        return list_of_grayscaled_images
+
+    def process_image_gray_scaled_to_binary_with_threshold(self, image) -> tuple[float, Image]:
         """
         Uses Otsu's method to binarize the image.
 
@@ -130,34 +187,46 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         if not isinstance(image, Image.Image):
             raise ValueError(f"The input image must be of type PIL.Image, but is {type(image)}")
 
+        np_image = np.array(image)
+        count_of_dimensions = len(np_image.shape)
+        if count_of_dimensions != 2:
+            raise ValueError(f"Image is not in gray scale!")
+
         try:
             np_image = np.array(image)
             ret, thresh = cv2.threshold(np_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
             binary_image = Image.fromarray(thresh)
 
-            logger.debug(f"Image was converted to binary with the threshold of {ret}")
-            return binary_image
+            return ret, binary_image
 
         except Exception as e:
-            logger.error(f"Error when converting to binary: {str(e)}")
-            raise
+            raise Exception(f"Error when converting to binary: {str(e)}")
 
-    def process_image_dataset_binary_to_grid_lines(self, dataset: Dataset) -> Dataset:
+    def process_image_dataset_binary_to_grid_lines(self, list_of_binary_images: list) -> list:
         """
         Using morphological operations to generate a binary image with only grid lines
 
-        :param dataset: image dataset with images in binary format and the corresponding text as target values
+        :param list_of_binary_images: image list with images in binary format and the corresponding text as target values
         :return: binary image with only grid lines
         """
-        try:
-         dataset = dataset.map(lambda data_point: {"image": self.process_binary_image_to_grid_lines(data_point["image"])})
-        except Exception as e:
-            logger.error(f"Error during processing binary images to grid lines: {str(e)}")
-            raise
+        # Initialize value to count how many images were not processed
+        count_not_processed_images = 0
 
-        logger.info(f"Complete Dataset with images in grid lines processed successfully!")
+        for i in range(0, len(list_of_binary_images)):
+            try:
+                list_of_binary_images[i]["image"] = self.process_binary_image_to_grid_lines(list_of_binary_images[i]["image"])
+            except Exception as e:
+                list_of_binary_images[i]["image"] = None
+                count_not_processed_images +=1
+                logger.error(f"Error during processing image with index {i} with error: {e}")
 
-        return dataset
+        # Calculate successfully processed images
+        count_of_correctly_processed_images = len(list_of_binary_images)-count_not_processed_images
+        logger.info(f"{count_of_correctly_processed_images} out of {len(list_of_binary_images)} images in the list "
+                    f"were successfully processed into binary scale images with grid lines "
+                    f"and {count_not_processed_images} where assigned with \"image\":None!")
+
+        return list_of_binary_images
 
     def process_binary_image_to_grid_lines(self, image):
         """
@@ -170,6 +239,15 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         # Guard clauses
         if image is None:
             raise ValueError("Input image can not be None.")
+
+        if not isinstance(image, Image.Image):
+            raise ValueError(f"The input image must be of type PIL.Image, but is {type(image)}")
+
+        np_img = np.array(image)
+        is_image_binary = np.all(np.isin(np_img, [0, 255]))
+
+        if not is_image_binary:
+            raise ValueError(f"The input image must be in binary format!")
 
         # Convert to numpy
         np_img = np.array(image)
@@ -205,18 +283,44 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         return res_img
 
-    def generate_image_dataset_binary_grid_to_list_of_contours(self, dataset: Dataset) -> Dataset:
+    def generate_image_dataset_binary_grid_to_list_of_contours(self, list_of_only_grid_lines: list, column_for_contours: str, column_for_labels: str) -> list:
         """
         Creates a list of contours per image, storing four point for the corners of each quadrilateral
 
-        :param dataset: image dataset with images in binary format with grid lines and the corresponding text as target values
+        :param list_of_only_grid_lines: image dataset with images in binary format with grid lines and the corresponding text as target values
         :return: dataset with list of contours and the corresponding list of labels
         """
+        # Initialize value to count how many images were not processed
+        count_not_processed_images = 0
 
-        # Replace each image with the list of the contours for the image
-        dataset = dataset.map(lambda datapoint: {"image": self.generate_binary_grid_image_to_list_of_contours(datapoint["image"])})
+        # Initalizing resulting list
+        len_of_list_of_only_grid_lines = len(list_of_only_grid_lines)
+        res_contours_list = []
+        for i in range(0, len_of_list_of_only_grid_lines):
+            list_of_labels_for_image = list_of_only_grid_lines[i]["labels"]
+            temp_contours = None
+            dict_elem = {column_for_contours: temp_contours, column_for_labels: list_of_labels_for_image}
+            res_contours_list.append(dict_elem)
 
-        return dataset
+            # Replace each image with the list of the contours for the image
+        for i in range(0, len(list_of_only_grid_lines)):
+            try:
+                list_of_labels_for_image = list_of_only_grid_lines[i]["labels"]
+                list_of_contours_for_image = self.generate_binary_grid_image_to_list_of_contours(list_of_only_grid_lines[i]["image"])
+                dict_elem = {column_for_contours: list_of_contours_for_image, column_for_labels: list_of_labels_for_image}
+                res_contours_list[i] = dict_elem
+            except Exception as e:
+                list_of_only_grid_lines[i]["image"] = None
+                count_not_processed_images +=1
+                logger.error(f"Error during processing image with index {i} with error: {e}")
+
+            # Calculate successfully processed images
+        count_of_correctly_processed_images = len(list_of_only_grid_lines)-count_not_processed_images
+        logger.info(f"{count_of_correctly_processed_images} out of {len(list_of_only_grid_lines)} images in the list "
+                    f"were successfully processed into a list of contours "
+                    f"and {count_not_processed_images} where assigned with \"image\":None!")
+
+        return res_contours_list
 
     def generate_binary_grid_image_to_list_of_contours(self, image):
         """
@@ -226,8 +330,19 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         :return: list of contours
         """
 
+        # Guard clauses
+        if image is None:
+            raise ValueError("Input image can not be None.")
+
+        if not isinstance(image, Image.Image):
+            raise ValueError(f"The input image must be of type PIL.Image, but is {type(image)}")
+
         # Convert image to numpy
         np_img = np.array(image)
+        is_image_binary = np.all(np.isin(np_img, [0, 255]))
+
+        if not is_image_binary:
+            raise ValueError(f"The input image must be in binary format!")
 
         # Find contours
         contours, hierarchy = cv2.findContours(np_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -366,54 +481,63 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         return res_list_of_contours
 
-    def generate_from_contour_dataset_and_image_dataset_cut_out_image_to_label_dataset(self,
-                                                                                       dataset_contours: Dataset,
-                                                                                       contour_column: str,
-                                                                                       dataset_images: Dataset,
-                                                                                       image_column: str, label_column: str) -> Dataset:
+    def generate_from_contour_list_and_image_list_cut_out_image_to_label_dataset(self,
+                                                                                 list_of_contour_list_per_image: list,
+                                                                                 contour_column: str,
+                                                                                 list_of_gray_scaled: list,
+                                                                                 image_column: str, label_column: str) -> Dataset:
         """
 
 
-        :param dataset_contours:
-        :param dataset_images:
+        :param list_of_contour_list_per_image:
+        :param list_of_gray_scaled:
         :return:
         """
-        cut_out_image_to_label_list = []
 
-        if len(dataset_contours["train"]) != len(dataset_images["train"]):
+        if len(list_of_contour_list_per_image) != len(list_of_gray_scaled):
             raise ValueError(f"The two dataset are not the same size: "
-                             f"\nContour dataset: {len(dataset_contours["train"])}, Image dataset: {len(dataset_images["train"])}")
+                             f"Contour dataset: {len(list_of_contour_list_per_image)}, Image dataset: {len(list_of_gray_scaled)}")
 
-        length_of_dataset = len(dataset_contours["train"])
+        # Initialize value to count how many images were not processed
+        count_not_processed_images = 0
+
+        cut_out_image_to_label_list = []
+        length_of_dataset = len(list_of_contour_list_per_image)
 
         for i in range(0, length_of_dataset):
-            # Define list of contours for the given image
-            print(f"Image dataset: {dataset_images["train"][i]}, Contour dataset: {dataset_contours["train"][i]}")
-            list_of_contours = dataset_contours["train"][i][contour_column]
-            image = dataset_images["train"][i][image_column]
-            list_of_labels = dataset_images["train"][i][label_column]
-            # Iterate through contour list and cut out images
-            for index_contours, contour in enumerate(list_of_contours):
-                if (index_contours+1) <= len(list_of_labels):
+            try:
+                list_of_contours = list_of_contour_list_per_image[i][contour_column]
+                image = list_of_gray_scaled[i][image_column]
+                list_of_labels = list_of_gray_scaled[i][label_column]
+                # Iterate through contour list and cut out images
+                ## just cut out images where there is a label
+                length_of_label_list = len(list_of_labels)
+                for index_contours, contour in enumerate(list_of_contours[:length_of_label_list]):
                     cut_out_image = self.generate_from_four_contour_points_and_image_a_cut_out_image(list_of_contours, image)
                     label = list_of_labels[index_contours]
-                    dict_element = {label:cut_out_image}
+                    dict_element = {"label":label, "image":cut_out_image}
                     cut_out_image_to_label_list.append(dict_element)
-                else:
-                    # Do not cut out images where no label exist
-                    break
+            except Exception as e:
+                count_not_processed_images +=1
+                logger.error(f"Error during processing image with index {i} with error: {e}")
 
         # Define dataset object
         features = Features({
             "label": str,
-            "image": Image()
+            "image": datasets.Image()
         })
         # Convert list of dicts to dataset object
         dataset_cut_out_image_to_label_dataset = Dataset.from_list(cut_out_image_to_label_list, features=features)
 
+        # Calculate successfully processed images
+        count_of_correctly_processed_images = len(list_of_contour_list_per_image)-count_not_processed_images
+        logger.info(f"{count_of_correctly_processed_images} out of {len(list_of_contour_list_per_image)} images in the list "
+                    f"were successfully processed into a list of move boxes "
+                    f"and {count_not_processed_images} where assigned with \"image\":None!")
+
         return dataset_cut_out_image_to_label_dataset
 
-    def generate_from_four_contour_points_and_image_a_cut_out_image(self, list_contours, image: Image):
+    def generate_from_four_contour_points_and_image_a_cut_out_image(self, list_contours, image: PIL.Image):
         """
         Cut out image with contours defined in list_contours from the bigger image
 
@@ -421,13 +545,20 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         :param image:
         :return:
         """
+        # Define corners
         top_left_corner = list_contours[0]
         bottom_right_corner = list_contours[2]
-        cut_out_image = image.crop(top_left_corner[0], top_left_corner[1], bottom_right_corner[0], bottom_right_corner[1])
+
+        # Define padding for cut out image
+        percent_padding_on_top = 0.15
+        percent_padding_on_bottom = 0.25
+        padding_at_top = percent_padding_on_top*abs(bottom_right_corner[1]-top_left_corner[1])
+        padding_at_bottom = percent_padding_on_bottom*abs(bottom_right_corner[1]-top_left_corner[1])
+
+        # Redefine corners with padding
+        top_left_corner[1] = top_left_corner[1] - padding_at_top
+        bottom_right_corner[1] = bottom_right_corner[1] + padding_at_bottom
+
+        cut_out_image = image.crop((top_left_corner[0], top_left_corner[1], bottom_right_corner[0], bottom_right_corner[1]))
 
         return cut_out_image
-
-    ##TODO: Implement Method
-    def map_move_boxes_to_label(self, dataset: Dataset) -> Dataset:
-        """Abstract method to map move boxes to a label"""
-        return dataset
