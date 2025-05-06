@@ -86,6 +86,61 @@ class MyTestCase(unittest.TestCase):
             self.assertTrue(is_image_binary)
         self.assertEqual(206, len(list_of_binary_image_with_grid_lines))  # add assertion here
 
+    def test_generate_image_dataset_binary_grid_to_list_of_contours(self):
+        # Give
+        split_of_dataset = "train"
+        list_of_dataset = (self.sut_preprocessing
+        .convert_dataset_to_list(
+            self.dataset, split_of_dataset, "image", "labels"))
+        grayscaled_list = self.sut_preprocessing.process_image_dataset_rgb_to_grayscale(list_of_dataset)
+        list_binary = self.sut_preprocessing.process_image_dataset_gray_scaled_to_binary_with_threshold(grayscaled_list)
+        list_of_binary_image_with_grid_lines = self.sut_preprocessing.process_image_dataset_binary_to_grid_lines(list_binary)
+        column_for_contours = "list_of_contours"
+        column_for_labels = "labels"
+
+        # When
+        list_of_contours = self.sut_preprocessing.generate_image_dataset_binary_grid_to_list_of_contours(
+            list_of_binary_image_with_grid_lines, column_for_contours, column_for_labels)
+
+        # Then
+        self.assertIsInstance(list_of_contours, list)
+        self.assertEqual(len(list_of_binary_image_with_grid_lines), len(list_of_contours))  # add assertion here
+        for elem in list_of_contours:
+            self.assertIsInstance(elem, dict)
+            self.assertEqual(2, len(elem), "The length of elem is not 2")
+            self.assertIn(column_for_contours, elem, "The key \"list_of_contours\" not in elem")
+            self.assertIn(column_for_labels, elem, "The key \"labels\" not in elem")
+
+    def test_generate_from_contour_list_and_image_list_cut_out_image_to_label_dataset(self):
+        # Give
+        split_of_dataset = "train"
+        list_of_dataset = (self.sut_preprocessing
+        .convert_dataset_to_list(
+            self.dataset, split_of_dataset, "image", "labels"))
+        list_of_gray_scaled = self.sut_preprocessing.process_image_dataset_rgb_to_grayscale(list_of_dataset)
+        list_binary = self.sut_preprocessing.process_image_dataset_gray_scaled_to_binary_with_threshold(list_of_gray_scaled)
+        list_of_binary_image_with_grid_lines = self.sut_preprocessing.process_image_dataset_binary_to_grid_lines(list_binary)
+        column_for_contours = "list_of_contours"
+        column_for_labels = "labels"
+        list_of_contour_list_per_image = self.sut_preprocessing.generate_image_dataset_binary_grid_to_list_of_contours(
+            list_of_binary_image_with_grid_lines, column_for_contours, column_for_labels)
+
+        # When
+        column_for_contours = "list_of_contours"
+        image_column = "image"
+        label_column = "labels"
+        dataset_move_boxes_with_labels = (self.sut_preprocessing
+        .generate_from_contour_list_and_image_list_cut_out_image_to_label_dataset(
+                list_of_contour_list_per_image, column_for_contours, list_of_gray_scaled, image_column, label_column))
+
+        # Then
+        print(dataset_move_boxes_with_labels)
+        for elem in dataset_move_boxes_with_labels:
+            self.assertIsInstance(dataset_move_boxes_with_labels, Dataset)
+            self.assertEqual(2, len(elem), "The length of elem is not 2")
+            self.assertIn(image_column, elem, "The key \"list_of_contours\" not in elem")
+            self.assertIn(label_column, elem, "The key \"labels\" not in elem")
+
     def test_preprocess_image_dataset_return_dataset_with_cut_out_move_boxes(self):
         # When
         res_dataset = self.sut_preprocessing.preprocess_image_dataset(self.dataset)

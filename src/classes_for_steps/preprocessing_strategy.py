@@ -293,7 +293,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         # Initialize value to count how many images were not processed
         count_not_processed_images = 0
 
-        # Initalizing resulting list
+        # Initializing resulting list with same length as list_of_only_grid_lines
         len_of_list_of_only_grid_lines = len(list_of_only_grid_lines)
         res_contours_list = []
         for i in range(0, len_of_list_of_only_grid_lines):
@@ -302,19 +302,19 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
             dict_elem = {column_for_contours: temp_contours, column_for_labels: list_of_labels_for_image}
             res_contours_list.append(dict_elem)
 
-            # Replace each image with the list of the contours for the image
+        # logger.debug(f"Initial list of only grid lines: {res_contours_list}, length: {len(res_contours_list)}")
+
+        # Set list of the contours for the image
         for i in range(0, len(list_of_only_grid_lines)):
             try:
-                list_of_labels_for_image = list_of_only_grid_lines[i]["labels"]
                 list_of_contours_for_image = self.generate_binary_grid_image_to_list_of_contours(list_of_only_grid_lines[i]["image"])
-                dict_elem = {column_for_contours: list_of_contours_for_image, column_for_labels: list_of_labels_for_image}
-                res_contours_list[i] = dict_elem
+                res_contours_list[i][column_for_contours] = list_of_contours_for_image
             except Exception as e:
-                list_of_only_grid_lines[i]["image"] = None
+                res_contours_list[i][column_for_contours] = None
                 count_not_processed_images +=1
                 logger.error(f"Error during processing image with index {i} with error: {e}")
 
-            # Calculate successfully processed images
+        # Calculate successfully processed images
         count_of_correctly_processed_images = len(list_of_only_grid_lines)-count_not_processed_images
         logger.info(f"{count_of_correctly_processed_images} out of {len(list_of_only_grid_lines)} images in the list "
                     f"were successfully processed into a list of contours "
@@ -489,6 +489,9 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         """
 
 
+        :param label_column:
+        :param image_column:
+        :param contour_column:
         :param list_of_contour_list_per_image:
         :param list_of_gray_scaled:
         :return:
@@ -508,26 +511,26 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
             try:
                 list_of_contours = list_of_contour_list_per_image[i][contour_column]
                 image = list_of_gray_scaled[i][image_column]
-                list_of_labels = list_of_gray_scaled[i][label_column]
-                # Iterate through contour list and cut out images
-                ## just cut out images where there is a label
-                length_of_label_list = len(list_of_labels)
-                for index_contours, contour in enumerate(list_of_contours[:length_of_label_list]):
-                    cut_out_image = self.generate_from_four_contour_points_and_image_a_cut_out_image(list_of_contours, image)
-                    label = list_of_labels[index_contours]
-                    dict_element = {"label":label, "image":cut_out_image}
-                    cut_out_image_to_label_list.append(dict_element)
+                # logger.debug(f"Is list_of_contour_list_per_image None: {(list_of_contours is None)}, list_of_contour_list_per_image: {list_of_contours}, "
+                #              f"Is image None: {(image is None)}")
+                if list_of_contours is not None and image is not None:
+                    list_of_labels = list_of_gray_scaled[i][label_column]
+                    # Iterate through contour list and cut out images
+                    ## just cut out images where there is a label
+                    length_of_label_list = len(list_of_labels)
+                    # logger.debug(f"Type of list_of_labels: {type(list_of_labels)}, Type of length_of_label_list: {type(length_of_label_list)}")
+                    list_of_contours_needed = list_of_contours[:length_of_label_list]
+                    for index_contours, contour in enumerate(list_of_contours_needed):
+                        cut_out_image = self.generate_from_four_contour_points_and_image_a_cut_out_image(contour, image)
+                        label = list_of_labels[index_contours]
+                        dict_element = {"image":cut_out_image, "label":label}
+                        cut_out_image_to_label_list.append(dict_element)
             except Exception as e:
                 count_not_processed_images +=1
                 logger.error(f"Error during processing image with index {i} with error: {e}")
 
         # Define dataset object
-        features = Features({
-            "label": str,
-            "image": datasets.Image()
-        })
-        # Convert list of dicts to dataset object
-        dataset_cut_out_image_to_label_dataset = Dataset.from_list(cut_out_image_to_label_list, features=features)
+        dataset_cut_out_image_to_label_dataset = Dataset.from_list(cut_out_image_to_label_list)
 
         # Calculate successfully processed images
         count_of_correctly_processed_images = len(list_of_contour_list_per_image)-count_not_processed_images
