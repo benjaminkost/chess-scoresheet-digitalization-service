@@ -71,7 +71,10 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
             ## Contour Algorithm
             column_for_contours = "list_of_contours"
             column_for_labels = "labels"
-            list_of_contour_list_per_image = self.generate_image_dataset_binary_grid_to_list_of_contours(list_of_only_grid_lines, column_for_contours, column_for_labels)
+            with_restriction = True
+            count_of_needed_contours = 120
+            list_of_contour_list_per_image = self.generate_image_dataset_binary_grid_to_list_of_contours(
+                list_of_only_grid_lines, column_for_contours, column_for_labels, with_restriction, count_of_needed_contours)
 
             ## Cut out boxes with padding, give them a name and map them to the corresponding label
             column_for_contours = "list_of_contours"
@@ -291,7 +294,8 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         return res_img
 
-    def generate_image_dataset_binary_grid_to_list_of_contours(self, list_of_only_grid_lines: list, column_for_contours: str, column_for_labels: str) -> list:
+    def generate_image_dataset_binary_grid_to_list_of_contours(self, list_of_only_grid_lines: list, column_for_contours: str,
+                                                               column_for_labels: str, with_restriction: bool, count_of_needed_contours: int) -> list:
         """
         Creates a list of contours per image, storing four point for the corners of each quadrilateral
 
@@ -318,6 +322,16 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
             try:
                 list_of_contours_for_image = self.generate_binary_grid_image_to_list_of_contours(list_of_only_grid_lines[i]["image"])
                 res_contours_list[i][column_for_contours] = list_of_contours_for_image
+                # If count
+                if with_restriction:
+                    if len(list_of_contours_for_image) < count_of_needed_contours:
+                        res_contours_list[i][column_for_contours] = None
+                        count_not_processed_images +=1
+                        logger.error(f"{len(list_of_contours_for_image)} are not enough contours found. Should be 120!")
+                    elif len(list_of_contours_for_image) > count_of_needed_contours:
+                        res_contours_list[i][column_for_contours] = None
+                        count_not_processed_images +=1
+                        logger.error(f"{len(list_of_contours_for_image)} ar too many contours found. Should be 120")
             except Exception as e:
                 res_contours_list[i][column_for_contours] = None
                 count_not_processed_images +=1
@@ -374,17 +388,11 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         median_area = float(np.median([cv2.contourArea(contour) for contour in simplified_contours]))
         filtered_contours = [contour for contour in simplified_contours if 0.5 * median_area <= cv2.contourArea(contour) <= 1.5 * median_area]
 
-        if len(filtered_contours) == 120:
-            # Sort contours based on their positions relative to one another
-            sorted_contours = self.get_contour_precendence(filtered_contours)
-            # Sort points in the 4 points of the corners of each move box contour
-            sorted_contours_with_sorted_points = self.sort_points_in_list_of_contours(sorted_contours)
-            return sorted_contours_with_sorted_points
-        elif len(filtered_contours) < 120:
-            raise ValueError(f"{len(filtered_contours)} are not enough contours found. Should be 120!")
-        elif len(filtered_contours) > 120:
-            raise ValueError(f"{len(filtered_contours)} ar too many contours found. Should be 120")
-        return None
+        # Sort contours based on their positions relative to one another
+        sorted_contours = self.get_contour_precendence(filtered_contours)
+        # Sort points in the 4 points of the corners of each move box contour
+        sorted_contours_with_sorted_points = self.sort_points_in_list_of_contours(sorted_contours)
+        return sorted_contours_with_sorted_points
 
     def get_contour_precendence(self, contours):
         """

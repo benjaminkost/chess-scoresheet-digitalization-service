@@ -98,10 +98,12 @@ class MyTestCase(unittest.TestCase):
         list_of_binary_image_with_grid_lines = self.sut_preprocessing.process_image_dataset_binary_to_grid_lines(list_binary)
         column_for_contours = "list_of_contours"
         column_for_labels = "labels"
+        with_restriction = True
+        count_of_needed_contours = 120
 
         # When
         list_of_contours = self.sut_preprocessing.generate_image_dataset_binary_grid_to_list_of_contours(
-            list_of_binary_image_with_grid_lines, column_for_contours, column_for_labels)
+            list_of_binary_image_with_grid_lines, column_for_contours, column_for_labels, with_restriction, count_of_needed_contours)
 
         # Then
         self.assertIsInstance(list_of_contours, list)
@@ -123,8 +125,10 @@ class MyTestCase(unittest.TestCase):
         list_of_binary_image_with_grid_lines = self.sut_preprocessing.process_image_dataset_binary_to_grid_lines(list_binary)
         column_for_contours = "list_of_contours"
         column_for_labels = "labels"
+        with_restriction = True
+        count_of_needed_contours = 120
         list_of_contour_list_per_image = self.sut_preprocessing.generate_image_dataset_binary_grid_to_list_of_contours(
-            list_of_binary_image_with_grid_lines, column_for_contours, column_for_labels)
+            list_of_binary_image_with_grid_lines, column_for_contours, column_for_labels, with_restriction, count_of_needed_contours)
 
         # When
         column_for_contours = "list_of_contours"
