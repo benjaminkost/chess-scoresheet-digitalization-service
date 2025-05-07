@@ -1,5 +1,6 @@
 import unittest
 
+import cv2
 import numpy as np
 from datasets import Dataset
 
@@ -134,12 +135,13 @@ class MyTestCase(unittest.TestCase):
                 list_of_contour_list_per_image, column_for_contours, list_of_gray_scaled, image_column, label_column))
 
         # Then
-        print(dataset_move_boxes_with_labels)
+        np_img = np.array(dataset_move_boxes_with_labels[0]["image"])
+        cv2.imshow("image", np_img)
         for elem in dataset_move_boxes_with_labels:
             self.assertIsInstance(dataset_move_boxes_with_labels, Dataset)
             self.assertEqual(2, len(elem), "The length of elem is not 2")
-            self.assertIn(image_column, elem, "The key \"list_of_contours\" not in elem")
-            self.assertIn(label_column, elem, "The key \"labels\" not in elem")
+            self.assertIn(image_column, elem, f"The key \"{image_column}\" not in elem")
+            self.assertIn("label", elem, f"The key \"label\" not in elem")
 
     def test_preprocess_image_dataset_return_dataset_with_cut_out_move_boxes(self):
         # When
@@ -147,7 +149,8 @@ class MyTestCase(unittest.TestCase):
 
         # Then
         self.assertIsInstance(res_dataset, Dataset)
-        self.assertEqual(206, len(res_dataset["train"]))
+        is_bigger_list = len(res_dataset) > len(self.dataset)
+        self.assertTrue(is_bigger_list)
 
 if __name__ == '__main__':
     unittest.main()

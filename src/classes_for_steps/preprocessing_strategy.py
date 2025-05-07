@@ -1,11 +1,11 @@
+import copy
 import logging
 from abc import ABC, abstractmethod
 import PIL
-import datasets
-from PIL import Image
+from PIL import Image, PngImagePlugin
 import cv2
 import numpy as np
-from datasets import Dataset, DatasetDict, Features
+from datasets import Dataset, DatasetDict
 
 # Configure Logger:
 # ANSI Escape Code for white letters
@@ -49,7 +49,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
             raise ValueError("Dataset can not be None")
         if not isinstance(dataset, DatasetDict) and not isinstance(dataset, Dataset):
             raise ValueError("Dataset must be a Dataset object, the dataset is type of: " + str(type(dataset)))
-        if type(dataset["train"]["image"][0]) != Image.Image and type(dataset["train"]["image"][0]) != PIL.PngImagePlugin.PngImageFile:
+        if not isinstance(dataset["train"]["image"][0], (Image.Image, PngImagePlugin.PngImageFile)):
             raise ValueError("Dataset must contain images, but is type of: " + str(type(dataset["train"]["image"][0])))
 
         # Initalizing resulting dataset
@@ -129,37 +129,42 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         :param list_of_dataset: image dataset with images in RGB format and the corresponding text as target values
         :return: dataset with images in gray-scale format
         """
+        # Initializing resulting list
+        res_list = copy.deepcopy(list_of_dataset)
 
         # Initialize value to count how many images were not processed
         count_not_processed_images = 0
 
-        for i in range(0, len(list_of_dataset)):
-            list_of_dataset[i]["image"] = list_of_dataset[i]["image"].convert("L")
+        for i in range(0, len(res_list)):
+            res_list[i]["image"] = list_of_dataset[i]["image"].convert("L")
 
-        count_of_correctly_processed_images = len(list_of_dataset)-count_not_processed_images
+        count_of_correctly_processed_images = len(res_list)-count_not_processed_images
         logger.info(f"All images in the list were successfully processed into gray scale format!")
 
-        return list_of_dataset
+        return res_list
 
-    def process_image_dataset_gray_scaled_to_binary_with_threshold(self, list_of_grayscaled_images: list) -> list:
+    def process_image_dataset_gray_scaled_to_binary_with_threshold(self, list_images: list) -> list:
         """
         Making the images in the dataset binary with Otsu's method
 
-        :param list_of_grayscaled_images: image dataset with images in gray-scale format and the corresponding text as target values
+        :param list_images: image dataset with images in gray-scale format and the corresponding text as target values
         :return: dataset with images in binary format
         """
+        # Initializing resulting list
+        res_list = copy.deepcopy(list_images)
+
         # Initialize value to count how many images were not processed
         count_not_processed_images = 0
 
         # List of thresholds to calculate Average threshold
         thresholds = []
 
-        for i in range(0, len(list_of_grayscaled_images)):
+        for i in range(0, len(res_list)):
             try:
-                threshold, list_of_grayscaled_images[i]["image"] = self.process_image_gray_scaled_to_binary_with_threshold(list_of_grayscaled_images[i]["image"])
+                threshold, res_list[i]["image"] = self.process_image_gray_scaled_to_binary_with_threshold(list_images[i]["image"])
                 thresholds.append(threshold)
             except Exception as e:
-                list_of_grayscaled_images[i]["image"] = None
+                res_list[i]["image"] = None
                 count_not_processed_images +=1
                 logger.error(f"Error during processing image with index {i}, with error: {e}")
 
@@ -167,12 +172,12 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         avg_threshold = round((sum(thresholds) / len(thresholds)), 2)
 
         # Calculate successfully processed images
-        count_of_correctly_processed_images = len(list_of_grayscaled_images)-count_not_processed_images
-        logger.info(f"{count_of_correctly_processed_images} out of {len(list_of_grayscaled_images)} images in the list "
+        count_of_correctly_processed_images = len(res_list) - count_not_processed_images
+        logger.info(f"{count_of_correctly_processed_images} out of {len(res_list)} images in the list "
                     f"were successfully processed into binary scale format with an average threshold of {avg_threshold} "
                     f"and {count_not_processed_images} where assigned with \"image\":None!")
 
-        return list_of_grayscaled_images
+        return res_list
 
     def process_image_gray_scaled_to_binary_with_threshold(self, image) -> tuple[float, Image]:
         """
@@ -209,24 +214,27 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         :param list_of_binary_images: image list with images in binary format and the corresponding text as target values
         :return: binary image with only grid lines
         """
+        # Initializing resulting list
+        res_list = copy.deepcopy(list_of_binary_images)
+
         # Initialize value to count how many images were not processed
         count_not_processed_images = 0
 
-        for i in range(0, len(list_of_binary_images)):
+        for i in range(0, len(res_list)):
             try:
-                list_of_binary_images[i]["image"] = self.process_binary_image_to_grid_lines(list_of_binary_images[i]["image"])
+                res_list[i]["image"] = self.process_binary_image_to_grid_lines(list_of_binary_images[i]["image"])
             except Exception as e:
-                list_of_binary_images[i]["image"] = None
+                res_list[i]["image"] = None
                 count_not_processed_images +=1
                 logger.error(f"Error during processing image with index {i} with error: {e}")
 
         # Calculate successfully processed images
-        count_of_correctly_processed_images = len(list_of_binary_images)-count_not_processed_images
-        logger.info(f"{count_of_correctly_processed_images} out of {len(list_of_binary_images)} images in the list "
+        count_of_correctly_processed_images = len(res_list)-count_not_processed_images
+        logger.info(f"{count_of_correctly_processed_images} out of {len(res_list)} images in the list "
                     f"were successfully processed into binary scale images with grid lines "
                     f"and {count_not_processed_images} where assigned with \"image\":None!")
 
-        return list_of_binary_images
+        return res_list
 
     def process_binary_image_to_grid_lines(self, image):
         """
@@ -290,6 +298,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         :param list_of_only_grid_lines: image dataset with images in binary format with grid lines and the corresponding text as target values
         :return: dataset with list of contours and the corresponding list of labels
         """
+
         # Initialize value to count how many images were not processed
         count_not_processed_images = 0
 
@@ -452,7 +461,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         :param list_of_contours:
         :return:
         """
-        res_list_of_contours = list_of_contours.copy()
+        res_list_of_contours = copy.deepcopy(list_of_contours)
 
         # Delete unnecessary dimension
         for index_contours, contour in enumerate(list_of_contours):
@@ -511,8 +520,6 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
             try:
                 list_of_contours = list_of_contour_list_per_image[i][contour_column]
                 image = list_of_gray_scaled[i][image_column]
-                # logger.debug(f"Is list_of_contour_list_per_image None: {(list_of_contours is None)}, list_of_contour_list_per_image: {list_of_contours}, "
-                #              f"Is image None: {(image is None)}")
                 if list_of_contours is not None and image is not None:
                     list_of_labels = list_of_gray_scaled[i][label_column]
                     # Iterate through contour list and cut out images
