@@ -1,5 +1,5 @@
 import unittest
-from src.classes_for_steps.ingest_data import HuggingFaceImageIngestor
+from src.classes_for_steps.ingest_data_strategy import HuggingFaceImageDataIngestorStrategy
 from PIL import Image
 
 
@@ -9,10 +9,10 @@ class ImageDataIngestorTest(unittest.TestCase):
         # Give
         owner = "BenjaminKost"
         dataset_name = "unprocessed_hcs"
-        ingestor = HuggingFaceImageIngestor()
+        ingestor = HuggingFaceImageDataIngestorStrategy()
 
         # When
-        cls.dataset = ingestor.ingest_image_dataset_from_huggingface(owner=owner, dataset_name=dataset_name)
+        cls.dataset = ingestor.ingest_data(owner=owner, dataset_name=dataset_name)
 
     def test_ingest_image_dataset_from_huggingface_Chesscorner_HCS_Dataset_csv_ReturnsDS(self):
         # Then

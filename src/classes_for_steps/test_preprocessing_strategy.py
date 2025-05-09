@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from datasets import Dataset
 
-from src.classes_for_steps.ingest_data import HuggingFaceImageIngestor
+from src.classes_for_steps.ingest_data_strategy import HuggingFaceImageDataIngestorStrategy
 from src.classes_for_steps.preprocessing_strategy import HuggingFacePreprocessingStrategy
 
 
@@ -14,11 +14,11 @@ class MyTestCase(unittest.TestCase):
         # Give
         owner = "BenjaminKost"
         dataset_name = "unprocessed_hcs"
-        ingestor = HuggingFaceImageIngestor()
+        ingestor = HuggingFaceImageDataIngestorStrategy()
         cls.sut_preprocessing = HuggingFacePreprocessingStrategy()
 
         # When
-        cls.dataset = ingestor.ingest_image_dataset_from_huggingface(owner=owner, dataset_name=dataset_name)
+        cls.dataset = ingestor.ingest_data(owner=owner, dataset_name=dataset_name)
 
     def test_convert_dataset_to_list_Return_list_of_dataset_returns_list(self):
         # When

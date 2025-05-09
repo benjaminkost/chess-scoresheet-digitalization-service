@@ -1,7 +1,8 @@
 import unittest
 from PIL import Image
 from src.classes_for_steps.data_splitter_strategy import SimpleDataSplittingStrategy
-from src.classes_for_steps.ingest_data import HuggingFaceImageIngestor
+from src.classes_for_steps.ingest_data_strategy import HuggingFaceImageDataIngestorStrategy
+
 
 class MyTestCase(unittest.TestCase):
     @classmethod
@@ -9,9 +10,9 @@ class MyTestCase(unittest.TestCase):
         # Give
         owner = "BenjaminKost"
         datasetName = "unprocessed_hcs"
-        ingestor = HuggingFaceImageIngestor()
+        ingestor = HuggingFaceImageDataIngestorStrategy()
 
-        cls.dataset = ingestor.ingest_image_dataset_from_huggingface(owner=owner, dataset_name=datasetName)
+        cls.dataset = ingestor.ingest_data(owner=owner, dataset_name=datasetName)
 
     def test_SimpleDataSplittingStrategy_data_split_give_unprocessed_hcs_dataset_showed_return_train_test_sets(self):
         # When
