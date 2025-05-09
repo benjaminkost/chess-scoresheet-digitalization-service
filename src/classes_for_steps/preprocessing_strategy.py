@@ -1,16 +1,18 @@
 import copy
 import logging
 from abc import ABC, abstractmethod
+from enum import Enum
+
 import PIL
 from PIL import Image, PngImagePlugin
 import cv2
 import numpy as np
-from datasets import Dataset, DatasetDict
+from datasets import Dataset, DatasetDict, Features, Value, Image as HFImage
 
 # Configure Logger:
 # ANSI Escape Code for white letters
 WHITE = "\033[37m"
-RESET = "\033[0m"  # Zum Zurücksetzen der Farbe
+RESET = "\033[0m"  # reset of color
 
 # Logger configure
 logger = logging.getLogger(__name__)
@@ -21,7 +23,7 @@ handler = logging.StreamHandler()
 handler.setLevel(logging.DEBUG)
 
 # Formatter with ANSI Escape Code for white letters
-formatter = logging.Formatter(f'{WHITE}%(asctime)s - %(name)s - %(levelname)s - %(message)s{RESET}')
+formatter = logging.Formatter(f'{WHITE}%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s{RESET}')
 handler.setFormatter(formatter)
 
 # Handler for Logger added
@@ -29,17 +31,70 @@ logger.addHandler(handler)
 
 class PreprocessingStrategy(ABC):
     @abstractmethod
-    def preprocess_image_dataset(self, dataset):
+    def transform(self, dataset):
         """Abstract method to preprocess an image dataset"""
         pass
 
+    def fit(self, dataset, labels=None):
+        """Abstract method to fit the preprocessing strategy"""
+        pass
+
+# Enums
+class ThresholdMethod(Enum):
+    # How to apply threshold method
+    OTSU = cv2.THRESH_OTSU
+    ADAPTIVE_THRESH_MEAN_C = cv2.ADAPTIVE_THRESH_MEAN_C
+    ADAPTIVE_THRESH_GAUSSIAN_C = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
+
 class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
-    def preprocess_image_dataset(self, dataset: Dataset) -> Dataset:
+    def __init__(self, kernelsize_gaussianBlur:tuple[int, int] = (5, 5),
+                 sigmaX:float = 0,
+                 threshold_method:ThresholdMethod=ThresholdMethod.OTSU,
+                 maxValue_threshold:int=255,
+                 block_size:int=11,
+                 c_value:float=2,
+                 horizontal_kernel_divisor:int=40,
+                 vertical_kernel_divisor:int=40,
+                 erosion_iterations:int=1,
+                 dilation_iterations:int=1):
+        self.kernel_gaussianBlur = kernelsize_gaussianBlur
+        self.sigmaX = sigmaX
+        self.threshold_method = threshold_method
+        self.maxValue_threshold = maxValue_threshold
+        if block_size % 2 == 0:
+            block_size += 1
+        self.block_size = block_size
+        self.c_value = c_value
+        self.horizontal_kernel_divisor = horizontal_kernel_divisor
+        self.vertical_kernel_divisor = vertical_kernel_divisor
+        self.erosion_iterations = erosion_iterations
+        self.dilation_iterations = dilation_iterations
+        self.mean = None
+        self.std = None
+
+    def fit(self, dataset, labels=None):
+        """
+
+        :param dataset:
+        :param labels:
+        :return:
+        """
+        for i in range(0, len(dataset["train"]["image"])):
+            image = dataset["train"][i]["image"]
+            if isinstance(image, Image.Image):
+                image = np.array(image)
+                self.mean = np.mean(image)
+                self.std = np.std(image)
+                logger.info(f"Mean: {self.mean}, Std: {self.std}")
+                break
+
+    def transform(self, dataset: Dataset, threshold_method:ThresholdMethod=ThresholdMethod.OTSU) -> Dataset:
         """
         Change a dataset of images and labels, so that the image is splitted into smaller images
         (containing the move boxes) and the list of labels is splitted into the label which is mapped to the smaller image
 
+        :param threshold_method:
         :param dataset:
         :return:
         """
@@ -52,7 +107,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         if not isinstance(dataset["train"]["image"][0], (Image.Image, PngImagePlugin.PngImageFile)):
             raise ValueError("Dataset must contain images, but is type of: " + str(type(dataset["train"]["image"][0])))
 
-        # Initalizing resulting dataset
+        # Initializing resulting dataset
         dataset_move_boxes_with_labels = None
 
         ## Convert dataset to list
@@ -81,12 +136,19 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
             image_column = "image"
             label_column = "labels"
             dataset_move_boxes_with_labels = (
-               self.generate_from_contour_list_and_image_list_cut_out_image_to_label_dataset(
-                   list_of_contour_list_per_image, column_for_contours, list_of_gray_scaled, image_column, label_column))
+                self.generate_from_contour_list_and_image_list_cut_out_image_to_label_dataset(
+                    list_of_contour_list_per_image, column_for_contours, list_of_gray_scaled, image_column, label_column))
         except ValueError as e:
             logger.error("ValueError: %s", e)
         except Exception as e:
             logger.error("Error: %s", e)
+
+        if dataset_move_boxes_with_labels is None:
+            features = Features({
+                "image": HFImage(),
+                "labels": Value("string")
+            })
+            dataset_move_boxes_with_labels = Dataset.from_dict({}, features=features)
 
         return dataset_move_boxes_with_labels
 
@@ -120,14 +182,16 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         count_of_correctly_processed_images = len(dataset_of_split)-count_not_processed_images
         logger.info(f"{count_of_correctly_processed_images} out of {len(dataset_of_split)} images in the dataset "
-                f"were successfully processed into a list "
-                f"and {count_not_processed_images} elements were excluded!")
+                    f"were successfully processed into a list "
+                    f"and {count_not_processed_images} elements were excluded!")
 
         return res_list_of_dataset
 
     def process_image_dataset_rgb_to_grayscale(self, list_of_dataset: list) -> list:
         """
-        Using the luminosity method: grayscale = 0.299 * R + 0.587 * G + 0.114 * B
+        Converts image to gray-scale and provices 3 methods to do so,
+        2. luminosity method: grayscale = 0.299 * R + 0.587 * G + 0.114 * B
+        3. lighness method: grayscale = (max(R, G, B) + min(R, G, B)) / 2
 
         :param list_of_dataset: image dataset with images in RGB format and the corresponding text as target values
         :return: dataset with images in gray-scale format
@@ -139,10 +203,18 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         count_not_processed_images = 0
 
         for i in range(0, len(res_list)):
-            res_list[i]["image"] = list_of_dataset[i]["image"].convert("L")
+            try:
+                res_list[i]["image"] = res_list[i]["image"].convert("L")
+            except Exception as e:
+                count_not_processed_images +=1
+                res_list[i]["image"] = None
+                logger.error(f"Error during processing image with index {i}, with error: {e}")
 
-        count_of_correctly_processed_images = len(res_list)-count_not_processed_images
-        logger.info(f"All images in the list were successfully processed into gray scale format!")
+        # Calculate successfully processed images
+        count_of_correctly_processed_images = len(res_list) - count_not_processed_images
+        logger.info(f"{count_of_correctly_processed_images} out of {len(res_list)} images in the list "
+                    f"were successfully processed into gray scale format "
+                    f"and {count_not_processed_images} where assigned with \"image\":None!")
 
         return res_list
 
@@ -159,30 +231,23 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         # Initialize value to count how many images were not processed
         count_not_processed_images = 0
 
-        # List of thresholds to calculate Average threshold
-        thresholds = []
-
         for i in range(0, len(res_list)):
             try:
-                threshold, res_list[i]["image"] = self.process_image_gray_scaled_to_binary_with_threshold(list_images[i]["image"])
-                thresholds.append(threshold)
+                res_list[i]["image"] = self.process_image_gray_scaled_to_binary_with_threshold(list_images[i]["image"])
             except Exception as e:
                 res_list[i]["image"] = None
                 count_not_processed_images +=1
                 logger.error(f"Error during processing image with index {i}, with error: {e}")
 
-        # Calculate average threshold
-        avg_threshold = round((sum(thresholds) / len(thresholds)), 2)
-
         # Calculate successfully processed images
         count_of_correctly_processed_images = len(res_list) - count_not_processed_images
         logger.info(f"{count_of_correctly_processed_images} out of {len(res_list)} images in the list "
-                    f"were successfully processed into binary scale format with an average threshold of {avg_threshold} "
+                    f"were successfully processed into binary scale format "
                     f"and {count_not_processed_images} where assigned with \"image\":None!")
 
         return res_list
 
-    def process_image_gray_scaled_to_binary_with_threshold(self, image) -> tuple[float, Image]:
+    def process_image_gray_scaled_to_binary_with_threshold(self, image) -> Image:
         """
         Uses Otsu's method to binarize the image.
 
@@ -202,10 +267,22 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         try:
             np_image = np.array(image)
-            ret, thresh = cv2.threshold(np_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            how_to_apply_threshold = cv2.THRESH_BINARY
+            if self.threshold_method == ThresholdMethod.OTSU:
+                threshold_method_combination = how_to_apply_threshold + self.threshold_method.value
+                ret, thresh = cv2.threshold(np_image, 0, self.maxValue_threshold, threshold_method_combination)
+            else:
+                thresh = cv2.adaptiveThreshold(
+                    src=np_image,
+                    maxValue=self.maxValue_threshold,
+                    adaptiveMethod=self.threshold_method.value,
+                    thresholdType=how_to_apply_threshold,
+                    blockSize=self.block_size,
+                    C=self.c_value)
+
             binary_image = Image.fromarray(thresh)
 
-            return ret, binary_image
+            return binary_image
 
         except Exception as e:
             raise Exception(f"Error when converting to binary: {str(e)}")
@@ -267,8 +344,8 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         np_img = cv2.bitwise_not(np_img)
 
         # Define kernel length
-        horizontal_kernel_len = np_img.shape[1] // 40
-        vertical_kernel_len = np_img.shape[0] // 40
+        horizontal_kernel_len = np_img.shape[1] // self.horizontal_kernel_divisor
+        vertical_kernel_len = np_img.shape[0] // self.vertical_kernel_divisor
 
         # Define kernel (matrix)
         horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (horizontal_kernel_len, 1))
@@ -276,15 +353,15 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         # Apply morphological operations with horizontal line
         ## Erosion
-        horizontal_lines = cv2.erode(np_img, horizontal_kernel, iterations=1)
+        horizontal_lines = cv2.erode(np_img, horizontal_kernel, iterations=self.erosion_iterations)
         ## Dilation
-        horizontal_lines = cv2.dilate(horizontal_lines, horizontal_kernel, iterations=1)
+        horizontal_lines = cv2.dilate(horizontal_lines, horizontal_kernel, iterations=self.dilation_iterations)
 
         # Apply morphological operations with vertical line
         ## Erosion
-        vertical_lines = cv2.erode(np_img, vertical_kernel, iterations=1)
+        vertical_lines = cv2.erode(np_img, vertical_kernel, iterations=self.erosion_iterations)
         ## Dilation
-        vertical_lines = cv2.dilate(vertical_lines, vertical_kernel, iterations=1)
+        vertical_lines = cv2.dilate(vertical_lines, vertical_kernel, iterations=self.dilation_iterations)
 
         # Bring processed images together
         grid_lines = cv2.add(horizontal_lines,vertical_lines)
@@ -331,7 +408,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
                     elif len(list_of_contours_for_image) > count_of_needed_contours:
                         res_contours_list[i][column_for_contours] = None
                         count_not_processed_images +=1
-                        logger.error(f"{len(list_of_contours_for_image)} ar too many contours found. Should be 120")
+                        logger.error(f"{len(list_of_contours_for_image)} are too many contours found. Should be 120")
             except Exception as e:
                 res_contours_list[i][column_for_contours] = None
                 count_not_processed_images +=1
@@ -521,6 +598,9 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         # Initialize value to count how many images were not processed
         count_not_processed_images = 0
 
+        # Initialize value of count of successfully processed images
+        count_of_images_being_processed = 0
+
         cut_out_image_to_label_list = []
         length_of_dataset = len(list_of_contour_list_per_image)
 
@@ -540,6 +620,8 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
                         label = list_of_labels[index_contours]
                         dict_element = {"image":cut_out_image, "label":label}
                         cut_out_image_to_label_list.append(dict_element)
+                    # For logging how many images were successfully processed
+                    count_of_images_being_processed +=1
             except Exception as e:
                 count_not_processed_images +=1
                 logger.error(f"Error during processing image with index {i} with error: {e}")
@@ -548,9 +630,8 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         dataset_cut_out_image_to_label_dataset = Dataset.from_list(cut_out_image_to_label_list)
 
         # Calculate successfully processed images
-        count_of_correctly_processed_images = len(list_of_contour_list_per_image)-count_not_processed_images
-        logger.info(f"{count_of_correctly_processed_images} out of {len(list_of_contour_list_per_image)} images in the list "
-                    f"were successfully processed into a list of move boxes "
+        logger.info(f"{count_of_images_being_processed} out of {length_of_dataset} images were being used to "
+                    f"cut out {len(dataset_cut_out_image_to_label_dataset)} move boxes "
                     f"and {count_not_processed_images} where assigned with \"image\":None!")
 
         return dataset_cut_out_image_to_label_dataset
