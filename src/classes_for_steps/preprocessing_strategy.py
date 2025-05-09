@@ -7,7 +7,7 @@ import PIL
 from PIL import Image, PngImagePlugin
 import cv2
 import numpy as np
-from datasets import Dataset, DatasetDict
+from datasets import Dataset, DatasetDict, Features, Value, Image as HFImage
 
 # Configure Logger:
 # ANSI Escape Code for white letters
@@ -46,22 +46,20 @@ class ThresholdMethod(Enum):
     ADAPTIVE_THRESH_MEAN_C = cv2.ADAPTIVE_THRESH_MEAN_C
     ADAPTIVE_THRESH_GAUSSIAN_C = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
 
-# Enums
-class GrayScaleMethod(Enum):
-    AVG_METHOD = 1
-    LUMINOSITY_METHOD = 2
-    LIGHTNESS_METHOD = 3
-
 class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
-    def __init__(self, kernelsize_gaussianBlur:tuple[int, int] = (5, 5), sigmaX:float = 0,
-                 grayscaled_method:GrayScaleMethod=GrayScaleMethod.LUMINOSITY_METHOD,
-                 threshold_method:ThresholdMethod=ThresholdMethod.OTSU, maxValue_threshold:int=255,
-                 block_size:int=11, c_value:float=2, horizontal_kernel_divisor:int=40,
-                 vertical_kernel_divisor:int=40, erosion_iterations:int=1, dilation_iterations:int=1,):
+    def __init__(self, kernelsize_gaussianBlur:tuple[int, int] = (5, 5),
+                 sigmaX:float = 0,
+                 threshold_method:ThresholdMethod=ThresholdMethod.OTSU,
+                 maxValue_threshold:int=255,
+                 block_size:int=11,
+                 c_value:float=2,
+                 horizontal_kernel_divisor:int=40,
+                 vertical_kernel_divisor:int=40,
+                 erosion_iterations:int=1,
+                 dilation_iterations:int=1):
         self.kernel_gaussianBlur = kernelsize_gaussianBlur
         self.sigmaX = sigmaX
-        self.grayscaled_method = grayscaled_method
         self.threshold_method = threshold_method
         self.maxValue_threshold = maxValue_threshold
         if block_size % 2 == 0:
@@ -76,7 +74,12 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         self.std = None
 
     def fit(self, dataset, labels=None):
-        """Abstract method to fit the preprocessing strategy"""
+        """
+
+        :param dataset:
+        :param labels:
+        :return:
+        """
         for i in range(0, len(dataset["train"]["image"])):
             image = dataset["train"][i]["image"]
             if isinstance(image, Image.Image):
@@ -104,7 +107,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
         if not isinstance(dataset["train"]["image"][0], (Image.Image, PngImagePlugin.PngImageFile)):
             raise ValueError("Dataset must contain images, but is type of: " + str(type(dataset["train"]["image"][0])))
 
-        # Initalizing resulting dataset
+        # Initializing resulting dataset
         dataset_move_boxes_with_labels = None
 
         ## Convert dataset to list
@@ -141,7 +144,11 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
             logger.error("Error: %s", e)
 
         if dataset_move_boxes_with_labels is None:
-            raise ValueError("Dataset_move_boxes_with_labels can not be None")
+            features = Features({
+                "image": HFImage(),
+                "labels": Value("string")
+            })
+            dataset_move_boxes_with_labels = Dataset.from_dict({}, features=features)
 
         return dataset_move_boxes_with_labels
 
@@ -183,7 +190,6 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
     def process_image_dataset_rgb_to_grayscale(self, list_of_dataset: list) -> list:
         """
         Converts image to gray-scale and provices 3 methods to do so,
-        1. Average method: grayscale = (R + G + B) / 3
         2. luminosity method: grayscale = 0.299 * R + 0.587 * G + 0.114 * B
         3. lighness method: grayscale = (max(R, G, B) + min(R, G, B)) / 2
 
@@ -198,29 +204,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         for i in range(0, len(res_list)):
             try:
-                if self.grayscaled_method == GrayScaleMethod.AVG_METHOD:
-                    # Average-Methode: Average of RGB-Value
-                    image = list_of_dataset[i]["image"]
-                    gray_image = image.convert("RGB")  # Make sure, that the image is RGB
-                    pixels = list(gray_image.getdata())
-                    avg_pixels = [(int((r + g + b) / 3),) * 3 for r, g, b in pixels]
-                    gray_image.putdata(avg_pixels)
-                    res_list[i]["image"] = gray_image
-
-                elif self.grayscaled_method == GrayScaleMethod.LUMINOSITY_METHOD:
-                    # Luminosity-Methode: Weighted Average of RGB-Value
-                    res_list[i]["image"] = list_of_dataset[i]["image"].convert("L")
-
-                elif self.grayscaled_method == GrayScaleMethod.LIGHTNESS_METHOD:
-                    # Lightness-Methode: Mean value is max and min Chanels
-                    image = list_of_dataset[i]["image"]
-                    gray_image = image.convert("RGB")  # Make sure, that the image is RGB
-                    pixels = list(gray_image.getdata())
-                    lightness_pixels = [
-                        (int((max(r, g, b) + min(r, g, b)) / 2),) * 3 for r, g, b in pixels
-                    ]
-                    gray_image.putdata(lightness_pixels)
-                    res_list[i]["image"] = gray_image
+                res_list[i]["image"] = res_list[i]["image"].convert("L")
             except Exception as e:
                 count_not_processed_images +=1
                 res_list[i]["image"] = None
@@ -424,7 +408,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
                     elif len(list_of_contours_for_image) > count_of_needed_contours:
                         res_contours_list[i][column_for_contours] = None
                         count_not_processed_images +=1
-                        logger.error(f"{len(list_of_contours_for_image)} ar too many contours found. Should be 120")
+                        logger.error(f"{len(list_of_contours_for_image)} are too many contours found. Should be 120")
             except Exception as e:
                 res_contours_list[i][column_for_contours] = None
                 count_not_processed_images +=1
