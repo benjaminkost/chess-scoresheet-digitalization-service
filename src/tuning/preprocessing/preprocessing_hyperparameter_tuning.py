@@ -4,7 +4,7 @@ import os
 import pandas as pd
 from sklearn.model_selection import ParameterGrid
 
-from src.classes_for_steps.ingest_data_strategy import HuggingFaceImageDataIngestorStrategy
+from src.classes_for_steps.ingest_data import HuggingFaceImageIngestor
 from src.classes_for_steps.preprocessing_strategy import HuggingFacePreprocessingStrategy, ThresholdMethod
 # Configure Logger:
 # ANSI Escape Code for white letters
@@ -48,8 +48,8 @@ max_length = -1
 # Loading Dataset
 owner = "BenjaminKost"
 dataset_name = "unprocessed_hcs"
-ingestor = HuggingFaceImageDataIngestorStrategy()
-dataset = ingestor.ingest_data(owner=owner, dataset_name=dataset_name)
+ingestor = HuggingFaceImageIngestor()
+dataset = ingestor.ingest_image_dataset_from_huggingface(owner=owner, dataset_name=dataset_name)
 
 # Initialize tuning history list
 # tuning_history = []

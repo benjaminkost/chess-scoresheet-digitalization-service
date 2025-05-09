@@ -4,7 +4,7 @@ import numpy as np
 
 from src.classes_for_steps.preprocessing_strategy import HuggingFacePreprocessingStrategy, \
     ThresholdMethod
-from src.classes_for_steps.ingest_data_strategy import HuggingFaceImageDataIngestorStrategy
+from src.classes_for_steps.ingest_data import HuggingFaceImageIngestor
 
 
 class MyTestCase(unittest.TestCase):
@@ -13,9 +13,9 @@ class MyTestCase(unittest.TestCase):
         # Give
         owner = "BenjaminKost"
         dataset_name = "unprocessed_hcs"
-        ingestor = HuggingFaceImageDataIngestorStrategy()
+        ingestor = HuggingFaceImageIngestor()
         cls.sut_preprocessing = HuggingFacePreprocessingStrategy()
-        cls.dataset = ingestor.ingest_data(owner=owner, dataset_name=dataset_name)
+        cls.dataset = ingestor.ingest_image_dataset_from_huggingface(owner=owner, dataset_name=dataset_name)
 
     # 1. Hyperparameter configuration
     def test_preprocess_image_dataset_with_first_config(self):
