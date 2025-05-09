@@ -27,12 +27,6 @@ class Preprocessing:
         Represents a class responsible for initializing and holding a preprocessing
         strategy used for data handling or processing tasks.
 
-        Attributes
-        ----------
-        _strategy : PreprocessingStrategy
-            Holds the preprocessing strategy passed during the instantiation of
-            the class to define specific data preprocessing behavior.
-
         Parameters
         ----------
         strategy : PreprocessingStrategy
@@ -62,4 +56,4 @@ class Preprocessing:
 
     def preprocess_image_dataset(self, dataset):
         """Abstract method to preprocess an image dataset"""
-        return self._strategy.preprocess_image_dataset(dataset)
+        return self._strategy.transform(dataset)

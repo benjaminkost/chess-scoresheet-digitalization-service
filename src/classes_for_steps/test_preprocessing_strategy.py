@@ -147,9 +147,9 @@ class MyTestCase(unittest.TestCase):
             self.assertIn(image_column, elem, f"The key \"{image_column}\" not in elem")
             self.assertIn("label", elem, f"The key \"label\" not in elem")
 
-    def test_preprocess_image_dataset_return_dataset_with_cut_out_move_boxes(self):
+    def test_transform_returns_dataset_with_cut_out_move_boxes(self):
         # When
-        res_dataset = self.sut_preprocessing.preprocess_image_dataset(self.dataset)
+        res_dataset = self.sut_preprocessing.transform(self.dataset)
 
         # Then
         self.assertIsInstance(res_dataset, Dataset)
