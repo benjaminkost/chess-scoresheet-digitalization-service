@@ -1,6 +1,5 @@
 import unittest
 
-import cv2
 import numpy as np
 from datasets import Dataset
 
@@ -140,7 +139,6 @@ class MyTestCase(unittest.TestCase):
 
         # Then
         np_img = np.array(dataset_move_boxes_with_labels[0]["image"])
-        cv2.imshow("image", np_img)
         for elem in dataset_move_boxes_with_labels:
             self.assertIsInstance(dataset_move_boxes_with_labels, Dataset)
             self.assertEqual(2, len(elem), "The length of elem is not 2")
@@ -149,7 +147,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_transform_returns_dataset_with_cut_out_move_boxes(self):
         # When
-        res_dataset = self.sut_preprocessing.transform(self.dataset)
+        res_dataset = self.sut_preprocessing.preprocess_dataset(self.dataset)
 
         # Then
         self.assertIsInstance(res_dataset, Dataset)

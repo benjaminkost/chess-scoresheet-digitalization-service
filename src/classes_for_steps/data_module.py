@@ -27,15 +27,9 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 # Define an abstract class for Data Ingestor
-class DataModule(ABC):
-
+class DataModule(DataIngestorStrategy, PreprocessingStrategy, DataSplittingStrategy, DataLoaderStrategy, ABC):
     @abstractmethod
     def set_ingest_data_strategy(self, ingest_data_strategy: DataIngestorStrategy):
-        pass
-
-    @abstractmethod
-    def ingest_data(self, owner: str, dataset_name: str) -> Dataset:
-        """Abstract method to ingest a image dataset from huggingface"""
         pass
 
     @abstractmethod
@@ -43,15 +37,7 @@ class DataModule(ABC):
         pass
 
     @abstractmethod
-    def preprocess_data(self, data):
-        pass
-
-    @abstractmethod
     def set_data_splitter_strategy(self, data_splitter_strategy: DataSplittingStrategy):
-        pass
-
-    @abstractmethod
-    def split_dataset(self, dataset: Dataset, split: str, feature_column: str, target_column: str):
         pass
 
     @abstractmethod
@@ -59,12 +45,9 @@ class DataModule(ABC):
         """Abstract method to get dataloader"""
         pass
 
-    @abstractmethod
-    def load_batch(self, dataset: Dataset, batch_size=None, batch_start_index=None, shuffle=False):
-        pass
-
 # Implement a concrete class for Image Data Ingestion
 class HuggingFaceImageModule(DataModule):
+
     def __init__(self, ingest_data_strategy: DataIngestorStrategy,
                  preprocessing_strategy: PreprocessingStrategy,
                  data_splitter_strategy: DataSplittingStrategy,
@@ -95,16 +78,26 @@ class HuggingFaceImageModule(DataModule):
 
     # Executer
     def ingest_data(self, owner: str, dataset_name: str) -> Dataset:
+        if not self._ingest_data_strategy:
+            raise ValueError("Ingest data strategy is not set")
         return self._ingest_data_strategy.ingest_data(owner, dataset_name)
 
-    def preprocess_data(self, data):
-        return self._preprocessing_strategy.transform(data)
+    def preprocess_dataset(self, dataset):
+        if not self._preprocessing_strategy:
+            raise ValueError("Preprocessing strategy is not set")
+        return self._preprocessing_strategy.preprocess_dataset(dataset)
 
-    def split_dataset(self, dataset: Dataset, split: str, feature_column: str, target_column: str):
+    def split_data(self, dataset: Dataset, split: str, feature_column: str, target_column: str):
+        if not self._data_splitter_strategy:
+            raise ValueError("Data splitter strategy is not set")
         return self._data_splitter_strategy.split_data(dataset, split, feature_column, target_column)
 
     def load_batch(self, dataset: Dataset, batch_size=None, batch_start_index=None, shuffle=False):
+        if not self._dataloader_strategy:
+            raise ValueError("Dataloader strategy is not set")
         return self._dataloader_strategy.load_batch(dataset, batch_size, batch_start_index, shuffle)
 
     def reset_batch_start(self):
+        if not self._dataloader_strategy:
+            raise ValueError("Dataloader strategy is not set")
         self._dataloader_strategy.reset_batch_start()

@@ -31,12 +31,8 @@ logger.addHandler(handler)
 
 class PreprocessingStrategy(ABC):
     @abstractmethod
-    def transform(self, dataset):
+    def preprocess_dataset(self, dataset):
         """Abstract method to preprocess an image dataset"""
-        pass
-
-    def fit(self, dataset, labels=None):
-        """Abstract method to fit the preprocessing strategy"""
         pass
 
 # Enums
@@ -89,7 +85,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
                 logger.info(f"Mean: {self.mean}, Std: {self.std}")
                 break
 
-    def transform(self, dataset: Dataset, threshold_method:ThresholdMethod=ThresholdMethod.OTSU) -> Dataset:
+    def preprocess_dataset(self, dataset: Dataset, threshold_method:ThresholdMethod=ThresholdMethod.OTSU) -> Dataset:
         """
         Change a dataset of images and labels, so that the image is splitted into smaller images
         (containing the move boxes) and the list of labels is splitted into the label which is mapped to the smaller image

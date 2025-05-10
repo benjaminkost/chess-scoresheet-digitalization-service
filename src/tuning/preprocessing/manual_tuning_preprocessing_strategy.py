@@ -4,7 +4,7 @@ import numpy as np
 
 from src.classes_for_steps.preprocessing_strategy import HuggingFacePreprocessingStrategy, \
     ThresholdMethod
-from src.classes_for_steps.ingest_data import HuggingFaceImageIngestor
+from src.classes_for_steps.ingest_data_strategy import HuggingFaceImageDataIngestorStrategy
 
 
 class MyTestCase(unittest.TestCase):
@@ -13,15 +13,15 @@ class MyTestCase(unittest.TestCase):
         # Give
         owner = "BenjaminKost"
         dataset_name = "unprocessed_hcs"
-        ingestor = HuggingFaceImageIngestor()
+        ingestor = HuggingFaceImageDataIngestorStrategy()
         cls.sut_preprocessing = HuggingFacePreprocessingStrategy()
-        cls.dataset = ingestor.ingest_image_dataset_from_huggingface(owner=owner, dataset_name=dataset_name)
+        cls.dataset = ingestor.ingest_data(owner=owner, dataset_name=dataset_name)
 
     # 1. Hyperparameter configuration
     def test_preprocess_image_dataset_with_first_config(self):
         # When
         improving_image_processed = 2016
-        res_dataset = self.sut_preprocessing.transform(self.dataset)
+        res_dataset = self.sut_preprocessing.preprocess_dataset(self.dataset)
 
         # Then
         self.assertGreaterEqual(len(res_dataset), improving_image_processed)
@@ -67,7 +67,7 @@ class MyTestCase(unittest.TestCase):
         # When
         improving_image_processed = 2400
 
-        res_dataset = self.sut_preprocessing.transform(self.dataset)
+        res_dataset = self.sut_preprocessing.preprocess_dataset(self.dataset)
 
         # Then
         self.assertGreater(len(res_dataset), improving_image_processed)
@@ -80,7 +80,7 @@ class MyTestCase(unittest.TestCase):
         # When
         improving_image_processed = 2400
 
-        res_dataset = self.sut_preprocessing.transform(self.dataset)
+        res_dataset = self.sut_preprocessing.preprocess_dataset(self.dataset)
 
         for i, data in enumerate(res_dataset):
             # Extrahiere das Bild
@@ -234,7 +234,7 @@ class MyTestCase(unittest.TestCase):
     def test_preprocess_image_dataset_with_nine_config(self):
         # When
         improving_image_processed = 2016
-        res_dataset = self.sut_preprocessing.transform(self.dataset)
+        res_dataset = self.sut_preprocessing.preprocess_dataset(self.dataset)
 
         # Then
         self.assertGreaterEqual(len(res_dataset), improving_image_processed)

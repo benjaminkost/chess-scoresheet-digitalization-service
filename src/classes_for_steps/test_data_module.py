@@ -55,7 +55,7 @@ class MyTestCase(unittest.TestCase):
     # Test Preprocessing strategy
     def test_transform_returns_dataset_with_cut_out_move_boxes(self):
         # When
-        res_dataset = self.data_module.preprocess_data(self.dataset)
+        res_dataset = self.data_module.preprocess_dataset(self.dataset)
 
         # Then
         self.assertIsInstance(res_dataset, Dataset)
@@ -65,7 +65,7 @@ class MyTestCase(unittest.TestCase):
     # Test Data Splitter Strategy
     def test_SimpleDataSplittingStrategy_data_split_give_unprocessed_hcs_dataset_showed_return_train_test_sets(self):
         # When
-        X_train, X_test, y_train, y_test  = self.data_module.split_dataset(self.dataset, "train", "image", "labels")
+        X_train, X_test, y_train, y_test  = self.data_module.split_data(self.dataset, "train", "image", "labels")
 
         # Then
         self.assertIsInstance(X_train, list)
@@ -77,23 +77,23 @@ class MyTestCase(unittest.TestCase):
 
     def test_SimpleDataSplittingStrategy_data_split_give_wrong_split_name_return_error(self):
         # Then
-        self.assertRaises(KeyError, self.data_module.split_dataset, self.dataset, "wrong_split_name", "image", "labels")
+        self.assertRaises(KeyError, self.data_module.split_data, self.dataset, "wrong_split_name", "image", "labels")
 
     def test_SimpleDataSplittingStrategy_data_split_give_wrong_feature_column_name_return_error(self):
 
         # Then
-        self.assertRaises(KeyError, self.data_module.split_dataset, self.dataset, "train", "wrong_feature_column_name", "labels")
+        self.assertRaises(KeyError, self.data_module.split_data, self.dataset, "train", "wrong_feature_column_name", "labels")
 
     def test_SimpleDataSplittingStrategy_data_split_give_wrong_labels_column_name_return_error(self):
 
         # Then
-        self.assertRaises(KeyError, self.data_module.split_dataset, self.dataset, "train", "image", "wrong_target_column_name")
+        self.assertRaises(KeyError, self.data_module.split_data, self.dataset, "train", "image", "wrong_target_column_name")
 
     def test_SimpleDataSplittingStrategy_data_split_with_attributes_return_error(self):
         # When
         self.data_module.set_data_splitter_strategy(SimpleDataSplittingStrategy(0.5, 10))
 
-        X_train, X_test, y_train, y_test  = self.data_module.split_dataset(self.dataset, "train", "image", "labels")
+        X_train, X_test, y_train, y_test  = self.data_module.split_data(self.dataset, "train", "image", "labels")
 
         # Then
         self.assertIsInstance(X_train, list)

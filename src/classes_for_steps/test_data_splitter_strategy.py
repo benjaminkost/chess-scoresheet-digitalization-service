@@ -3,7 +3,6 @@ from PIL import Image
 from src.classes_for_steps.data_splitter_strategy import SimpleDataSplittingStrategy
 from src.classes_for_steps.ingest_data_strategy import HuggingFaceImageDataIngestorStrategy
 
-
 class MyTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
