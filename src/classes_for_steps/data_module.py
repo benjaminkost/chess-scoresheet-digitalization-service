@@ -60,7 +60,7 @@ class DataModule(ABC):
         pass
 
     @abstractmethod
-    def load_data(self, dataset: Dataset):
+    def load_batch(self, dataset: Dataset):
         pass
 
 # Implement a concrete class for Image Data Ingestion
@@ -69,7 +69,7 @@ class HuggingFaceImageModule(DataModule):
                  preprocessing_strategy: PreprocessingStrategy,
                  data_splitter_strategy: DataSplittingStrategy,
                  dataloader_strategy: DataLoaderStrategy):
-        logging.info("Initializing strategies for DataModule.")
+        logger.info("Initializing strategies for DataModule.")
 
         self._ingest_data_strategy = ingest_data_strategy
         self._preprocessing_strategy = preprocessing_strategy
@@ -78,19 +78,19 @@ class HuggingFaceImageModule(DataModule):
 
     # Setter
     def set_ingest_data_strategy(self, ingest_data_strategy: DataIngestorStrategy):
-        logging.info("Switching ingesting data strategy.")
+        logger.info("Switching ingesting data strategy.")
         self._ingest_data_strategy = ingest_data_strategy
 
     def set_preprocessing_strategy(self, preprocessing_strategy: PreprocessingStrategy):
-        logging.info("Switching preprocessing strategy.")
+        logger.info("Switching preprocessing strategy.")
         self._preprocessing_strategy = preprocessing_strategy
 
     def set_data_splitter_strategy(self, data_splitter_strategy: DataSplittingStrategy):
-        logging.info("Switching data splitter strategy.")
-        self._preprocessing_strategy = data_splitter_strategy
+        logger.info("Switching data splitter strategy.")
+        self._data_splitter_strategy = data_splitter_strategy
 
     def set_dataloader_strategy(self, dataload_strategy: DataLoaderStrategy):
-        logging.info("Switching data loader strategy.")
+        logger.info("Switching data loader strategy.")
         self._dataloader_strategy = dataload_strategy
 
     # Executer
@@ -101,8 +101,10 @@ class HuggingFaceImageModule(DataModule):
         return self._preprocessing_strategy.transform(data)
 
     def split_dataset(self, dataset: Dataset, split: str, feature_column: str, target_column: str):
-        return self._data_splitter_strategy.data_split(dataset, split, feature_column, target_column)
+        return self._data_splitter_strategy.split_data(dataset, split, feature_column, target_column)
 
-    # Loading Data
-    def load_data(self, dataset: Dataset):
-        return self._dataloader_strategy.load_data(dataset)
+    def load_batch(self, dataset: Dataset):
+        return self._dataloader_strategy.load_batch(dataset)
+
+    def reset_batch_start(self):
+        self._dataloader_strategy.reset_batch_start()

@@ -17,7 +17,7 @@ class MyTestCase(unittest.TestCase):
     def test_SimpleDataSplittingStrategy_data_split_give_unprocessed_hcs_dataset_showed_return_train_test_sets(self):
         # When
         splitter = SimpleDataSplittingStrategy()
-        X_train, X_test, y_train, y_test  = splitter.data_split(self.dataset, "train", "image", "labels")
+        X_train, X_test, y_train, y_test  = splitter.split_data(self.dataset, "train", "image", "labels")
 
         # Then
         self.assertIsInstance(X_train, list)
@@ -32,27 +32,27 @@ class MyTestCase(unittest.TestCase):
         splitter = SimpleDataSplittingStrategy()
 
         # Then
-        self.assertRaises(KeyError, splitter.data_split, self.dataset, "wrong_split_name", "image", "labels")
+        self.assertRaises(KeyError, splitter.split_data, self.dataset, "wrong_split_name", "image", "labels")
 
     def test_SimpleDataSplittingStrategy_data_split_give_wrong_feature_column_name_return_error(self):
         # When
         splitter = SimpleDataSplittingStrategy()
 
         # Then
-        self.assertRaises(KeyError, splitter.data_split, self.dataset, "train", "wrong_feature_column_name", "labels")
+        self.assertRaises(KeyError, splitter.split_data, self.dataset, "train", "wrong_feature_column_name", "labels")
 
     def test_SimpleDataSplittingStrategy_data_split_give_wrong_labels_column_name_return_error(self):
         # When
         splitter = SimpleDataSplittingStrategy()
 
         # Then
-        self.assertRaises(KeyError, splitter.data_split, self.dataset, "train", "image", "wrong_target_column_name")
+        self.assertRaises(KeyError, splitter.split_data, self.dataset, "train", "image", "wrong_target_column_name")
 
     def test_SimpleDataSplittingStrategy_data_split_with_attributes_return_error(self):
         # When
         splitter = SimpleDataSplittingStrategy(0.5, 10)
 
-        X_train, X_test, y_train, y_test  = splitter.data_split(self.dataset, "train", "image", "labels")
+        X_train, X_test, y_train, y_test  = splitter.split_data(self.dataset, "train", "image", "labels")
 
         # Then
         self.assertIsInstance(X_train, list)
