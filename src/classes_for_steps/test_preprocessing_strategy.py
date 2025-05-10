@@ -1,10 +1,9 @@
 import unittest
 
-import cv2
 import numpy as np
 from datasets import Dataset
 
-from src.classes_for_steps.ingest_data import HuggingFaceImageIngestor
+from src.classes_for_steps.ingest_data_strategy import HuggingFaceImageDataIngestorStrategy
 from src.classes_for_steps.preprocessing_strategy import HuggingFacePreprocessingStrategy
 
 
@@ -14,11 +13,11 @@ class MyTestCase(unittest.TestCase):
         # Give
         owner = "BenjaminKost"
         dataset_name = "unprocessed_hcs"
-        ingestor = HuggingFaceImageIngestor()
+        ingestor = HuggingFaceImageDataIngestorStrategy()
         cls.sut_preprocessing = HuggingFacePreprocessingStrategy()
 
         # When
-        cls.dataset = ingestor.ingest_image_dataset_from_huggingface(owner=owner, dataset_name=dataset_name)
+        cls.dataset = ingestor.ingest_data(owner=owner, dataset_name=dataset_name)
 
     def test_convert_dataset_to_list_Return_list_of_dataset_returns_list(self):
         # When
@@ -140,7 +139,6 @@ class MyTestCase(unittest.TestCase):
 
         # Then
         np_img = np.array(dataset_move_boxes_with_labels[0]["image"])
-        cv2.imshow("image", np_img)
         for elem in dataset_move_boxes_with_labels:
             self.assertIsInstance(dataset_move_boxes_with_labels, Dataset)
             self.assertEqual(2, len(elem), "The length of elem is not 2")
@@ -149,7 +147,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_transform_returns_dataset_with_cut_out_move_boxes(self):
         # When
-        res_dataset = self.sut_preprocessing.transform(self.dataset)
+        res_dataset = self.sut_preprocessing.preprocess_dataset(self.dataset)
 
         # Then
         self.assertIsInstance(res_dataset, Dataset)

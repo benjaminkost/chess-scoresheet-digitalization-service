@@ -29,7 +29,7 @@ logger.addHandler(handler)
 # Subclasses must implement the split_data method.
 class DataSplittingStrategy(ABC):
     @abstractmethod
-    def data_split(self, dataset: Dataset, split: str, feature_column: str, target_column: str):
+    def split_data(self, dataset: Dataset, split: str, feature_column: str, target_column: str):
         """
         Abstract class to split the dataset into training and testing set
 
@@ -55,7 +55,7 @@ class SimpleDataSplittingStrategy(DataSplittingStrategy):
         self.test_size=test_size
         self.random_state=random_state
 
-    def data_split(self, dataset: Dataset, split: str, feature_column: str, target_column: str):
+    def split_data(self, dataset: Dataset, split: str, feature_column: str, target_column: str):
         """
         Implements a simple data_split
 
