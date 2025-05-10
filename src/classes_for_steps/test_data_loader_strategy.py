@@ -49,11 +49,11 @@ class MyTestCase(unittest.TestCase):
 
         # When
         sut.load_batch(self.dataset)
-        self.assertNotEqual(0, sut._batch_start)
+        self.assertNotEqual(0, sut._batch_start_index)
         sut.reset_batch_start()
 
         # Then
-        self.assertEqual(0, sut._batch_start)
+        self.assertEqual(0, sut._batch_start_index)
 
 if __name__ == '__main__':
     unittest.main()

@@ -60,7 +60,7 @@ class DataModule(ABC):
         pass
 
     @abstractmethod
-    def load_batch(self, dataset: Dataset):
+    def load_batch(self, dataset: Dataset, batch_size=None, batch_start_index=None, shuffle=False):
         pass
 
 # Implement a concrete class for Image Data Ingestion
@@ -103,8 +103,8 @@ class HuggingFaceImageModule(DataModule):
     def split_dataset(self, dataset: Dataset, split: str, feature_column: str, target_column: str):
         return self._data_splitter_strategy.split_data(dataset, split, feature_column, target_column)
 
-    def load_batch(self, dataset: Dataset):
-        return self._dataloader_strategy.load_batch(dataset)
+    def load_batch(self, dataset: Dataset, batch_size=None, batch_start_index=None, shuffle=False):
+        return self._dataloader_strategy.load_batch(dataset, batch_size, batch_start_index, shuffle)
 
     def reset_batch_start(self):
         self._dataloader_strategy.reset_batch_start()
