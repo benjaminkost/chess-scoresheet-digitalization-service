@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from controllers import imageController
+from src.web_service.controllers import imageController
 
 # Create FastAPI server
 app = FastAPI()
