@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from src.web_service.controllers import imageController
+from controllers import imageController
 
 # Create FastAPI server
 app = FastAPI()
@@ -11,7 +11,8 @@ app.include_router(imageController.image_controller)
 
 # Manage access regarding: CORS (Access-controll-allow-origin), etc.
 origins = [
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "http://localhost:9000"
 ]
 
 app.add_middleware(
