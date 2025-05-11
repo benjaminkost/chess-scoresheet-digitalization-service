@@ -1,7 +1,7 @@
 import http
 
 from fastapi import APIRouter, UploadFile, File
-from src.web_service.services.imageService import ImageService
+from services.imageService import ImageService
 import logging
 logging.basicConfig(level=logging.INFO)
 
