@@ -12,11 +12,3 @@ class PostprocessingStrategy:
                 pgn_text += f"{move} "
 
         return pgn_text
-
-postprocessing = PostprocessingStrategy()
-
-list_text = ["e4", "e5", "d4", "Sc6", "Sc3"]
-
-pgn_text = postprocessing.turn_list_of_text_into_pgn(list_text)
-
-print(pgn_text)
