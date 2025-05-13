@@ -2,14 +2,16 @@ from zenml import step
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
 from PIL import Image
 
+from src.steps.post_processing_step import post_process_prediction_list
 from src.steps.preprocessing_step import preprocess_image
 
 
 @step(enable_cache=False)
-def predictor(model_service: MLFlowDeploymentService, processor_service: MLFlowDeploymentService, image: Image) -> list:
+def predictor(model_service: MLFlowDeploymentService, processor_service: MLFlowDeploymentService, image: Image) -> str:
     """
     Run an inference request against a deployed model.
 
+    :param processor_service:
     :param model_service: service where the model is deployed
     :param image: Image to be classified
     :return: the model prediction in np.ndarray format
@@ -31,6 +33,9 @@ def predictor(model_service: MLFlowDeploymentService, processor_service: MLFlowD
         prediction = processor_service.predict(prediction_encoded)
         list_of_predictions.append(prediction)
 
-    return list_of_predictions
+    # Post-process prediction list
+    pgn_file = post_process_prediction_list(list_of_predictions)
+
+    return pgn_file
 
 
