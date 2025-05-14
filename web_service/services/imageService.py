@@ -31,7 +31,8 @@ class ImageService:
             """
 
             # Write pgn file into the directory
-            file_path = f"/app/pgn_files/{self.file.filename}.pgn"
+            filename_without_type = self.file.filename.split(".")[0]
+            file_path = f"/app/pgn_files/{filename_without_type}.pgn"
             async with aiofiles.open(file_path, "w") as f:
                 await f.write(pgn_file_str)
 
