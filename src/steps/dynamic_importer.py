@@ -1,8 +1,10 @@
+import numpy as np
 from PIL import Image
+from numpy import array
 from zenml import step
 
 @step
-def dynamic_importer(file_path: str) -> Image:
+def dynamic_importer(file_path: str) -> array:
     """
     Should load the image file and return the image as PIL.Image.
 
@@ -14,4 +16,10 @@ def dynamic_importer(file_path: str) -> Image:
     if not file_path.endswith(".png"):
         raise ValueError("File path must point to a .png file.")
 
-    return Image.open(file_path)
+    # Open image file from file_path
+    image = Image.open(file_path)
+
+    # Convert PIL.Image to numpy
+    np_img = np.array(image)
+
+    return np_img
