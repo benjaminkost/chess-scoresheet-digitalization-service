@@ -14,17 +14,23 @@ from src.pipelines.deployment_pipeline import deployment_pipeline
     help="Stop the prediction service when done",
 )
 def run_main(stop_service: bool):
-    """Run the prices predictor deployment pipeline"""
+    """Run the image predictor deployment pipeline"""
     # load enviroment variables
     load_dotenv()
 
-    env_images = (os.environ["MODEL_NAMES"]
+    env_model_name = (os.environ["MODEL_NAMES"]
                   .replace("\"", "")
                   .replace("(", "")
                   .replace("(", "")
                   .replace(")", ""))
 
-    model_name = env_images
+    env_images = (os.environ["IMAGES"]
+                  .replace("\"", "")
+                  .replace("(", "")
+                  .replace("(", "")
+                  .replace(")", ""))
+
+    model_name = env_model_name
     docker_image_name = env_images
 
     # Set up mlflow experiment enviroment to dagshub
