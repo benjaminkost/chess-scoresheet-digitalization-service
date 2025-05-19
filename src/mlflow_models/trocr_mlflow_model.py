@@ -20,10 +20,10 @@ class HFTransformerImageModelWrapper(mlflow.pyfunc.PythonModel):
         self.processor = TrOCRProcessor.from_pretrained(hf_model_uri)
         self.model = VisionEncoderDecoderModel.from_pretrained(hf_model_uri)
 
-    def predict(self, context, np_img) -> dict:
+    def predict(self, context, model_input) -> dict:
 
         # Generate pixel_values with processor
-        pixel_values = self.processor(np_img, return_tensors="pt").pixel_values
+        pixel_values = self.processor(model_input, return_tensors="pt").pixel_values
 
         # Generate ids from model
         generated_ids = self.model.generate(pixel_values)

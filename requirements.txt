@@ -11,3 +11,4 @@ scikit_learn==1.6.1
 starlette==0.46.2
 transformers==4.51.3
 zenml==0.82.1
+dagshub

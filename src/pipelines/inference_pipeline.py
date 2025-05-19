@@ -4,7 +4,7 @@ from src.steps.dynamic_importer import dynamic_importer
 from src.steps.model_loader import load_model
 
 @pipeline(enable_cache=False)
-def inference_pipeline(file_path: str, model_name: str):
+def inference_pipeline(image_file_path: str, model_name: str):
     """
     Give a prediction for a given image
 
@@ -12,7 +12,7 @@ def inference_pipeline(file_path: str, model_name: str):
     """
 
     # Load image that was uploaded
-    np_img = dynamic_importer(file_path)
+    np_img = dynamic_importer(image_file_path)
 
     # Load the registered model
     model = load_model(model_name)

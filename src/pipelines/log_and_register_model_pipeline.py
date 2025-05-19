@@ -1,16 +1,11 @@
-import os.path
+from src.steps.log_register_custom_model import log_register_custom_model
 from sys import version_info
 import mlflow
-from zenml import pipeline
-
 from src.mlflow_models.trocr_mlflow_model import HFTransformerImageModelWrapper
-from src.steps.log_register_custom_model import log_register_custom_model
 
-@pipeline
-def log_and_register_model():
+def log_and_register_model_pipeline():
+    # Set model parameter
     MODELS_DIR = "models"
-
-    central_uri = os.path.abspath("../mlruns")
 
     print(f"MLflow tracking URI: {mlflow.get_tracking_uri()}")
 
@@ -19,8 +14,7 @@ def log_and_register_model():
 
     # Define artifacts
     artifacts = {
-        "hf_model" : "./mlflow_model_configs/mlflow_model_config.json",
-        "path": MODELS_DIR
+        "hf_model" : "./mlflow_model_configs/mlflow_model_config.json"
     }
     # conda enviroment
     conda_env = {
@@ -56,9 +50,12 @@ def log_and_register_model():
 
     # Log Transformer
     log_register_custom_model(
-            model=model,
+            python_model=model,
             conda_env=conda_env,
             artifacts=artifacts,
             artifact_path=MODELS_DIR,
-            registered_model_name=registered_model_name,
+            registered_model_name=registered_model_name
         )
+
+if __name__ == "__main__":
+    log_and_register_model_pipeline()
