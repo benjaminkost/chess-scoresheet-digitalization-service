@@ -1,0 +1,12 @@
+services:
+  chess-scoresheet-digitalization:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      #platforms:
+      #  - linux/arm64
+      # - linux/amd64
+    command: sh -c "uvicorn main:app --reload --port=8000 --host=0.0.0.0"
+    image: ${DOCKER_USERNAME}/chess-scoresheet-digitalization:${DOCKER_IMAGE_VERSION}
+    ports:
+      - "8000:8000"
