@@ -1,6 +1,7 @@
 # Chess-scoresheet-digitization-service
 ## Overview
 This repository is part of a project called ChessHub. The ChessHub project is build with a Microservice-Architecture.
+
 The chess-scoresheet-digitization-service repository defines the service which is responsible for digitializing a chess scoresheet.
 ## Installation
 ### Prerequisites
