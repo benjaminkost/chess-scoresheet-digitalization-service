@@ -20,7 +20,6 @@ git clone https://github.com/benjaminkost/chess-scoresheet-digitalization-servic
 pip install -r requirements.txt
 ```
 4. Start project
-- navigate to webapp and run
 ```bash
 docker compose up -d
 ```
