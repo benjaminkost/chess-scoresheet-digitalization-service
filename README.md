@@ -31,7 +31,7 @@ docker compose up -d
 | ----------------- | ------ | ------------------------------------------------ |
 | /api/image/upload | POST   | Upload image get a chess game as a PGN-File back |
 ## Test it out
- 1. Open a browser and tip in: `http://localhost:8000` 
+ 1. Open a browser and tip in: `http://localhost:8000/docs` 
  2. Try out the endpoints
 ## ML Experiments
 - MLflow: https://dagshub.com/benjaminkost/chess-scoresheet-digitalizer.mlflow/#/experiments/0?searchFilter=&orderByKey=attributes.start_time&orderByAsc=false&startTime=ALL&lifecycleFilter=Active&modelVersionFilter=All+Runs&datasetsFilter=W10%3D
