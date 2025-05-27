@@ -9,7 +9,7 @@ The chess-scoresheet-digitization-service repository defines the service which i
 ### Setup
 1. Clone the repository:
 ```bash
-git clone
+git clone https://github.com/benjaminkost/chess-scoresheet-digitalization-service.git
 ```
 2. Define .env
 - copy `.env_sample` and rename it to `.env`
