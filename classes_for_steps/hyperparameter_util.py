@@ -1,8 +1,11 @@
+import inspect
+
+
 class ModelHyperparameter:
     """The base class for hyperparameters."""
-    def save_hyperparameter(self, ignore=[]):
-        raise NotImplemented
-
-class TrOCRHyperparameter(ModelHyperparameter):
-    def __init__(self):
-        self.save_hyperparameter(ignore=[])
+    def save_hyperparameters(self, ignore=[]):
+        frame = inspect.currentframe().f_back
+        _, _, _, local_vars = inspect.getargvalues(frame)
+        self.hparams = {k:v for k, v in local_vars.items()
+                        if k not in set(ignore+['self']) and not k.startswith('_')}
+        for k, v in self.hparams.items(): setattr(self, k, v)
