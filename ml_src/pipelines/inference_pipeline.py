@@ -3,11 +3,11 @@ import logging
 import numpy as np
 from PIL import Image
 
-from ..steps.predict_postprocessing_step import postprocessing_prediction
-from ..steps.predict_preprocessing_step import preprocessing_image
-from ..steps.predictor import predictor
-from ..steps.dynamic_importer import load_png_image
-from ..steps.model_loader import load_model
+from ml_src.steps.predict_postprocessing_step import postprocessing_prediction
+from ml_src.steps.predict_preprocessing_step import preprocessing_image
+from ml_src.steps.predictor import predictor
+from ml_src.steps.dynamic_importer import load_png_image
+from ml_src.steps.model_loader import load_model
 
 # configure logger
 logging.basicConfig(

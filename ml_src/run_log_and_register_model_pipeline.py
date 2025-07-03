@@ -1,6 +1,6 @@
-from steps.log_register_custom_model import log_register_custom_model
+from ml_src.steps import log_register_custom_model
 from sys import version_info
-from mlflow_models.trocr_mlflow_model import HFTransformerImageModelWrapper
+from ml_src.mlflow_models import HFTransformerImageModelWrapper
 
 def log_and_register_model_pipeline():
     # Set model parameter

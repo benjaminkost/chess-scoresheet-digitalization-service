@@ -1,7 +1,7 @@
 import click
 from PIL import Image
 
-from pipelines.inference_pipeline import inference_pipeline
+from ml_src.pipelines.inference_pipeline import inference_pipeline
 
 @click.command()
 @click.option(

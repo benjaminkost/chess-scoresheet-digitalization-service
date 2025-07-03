@@ -3,7 +3,7 @@ import dagshub
 import click
 from dotenv import load_dotenv
 
-from pipelines.deployment_pipeline import deployment_pipeline
+from ml_src.pipelines import deployment_pipeline
 
 @click.command()
 @click.option(

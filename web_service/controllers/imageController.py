@@ -2,7 +2,7 @@ import http
 
 from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import FileResponse
-from ..services.imageService import ImageService
+from web_service.services.imageService import ImageService
 import logging
 from pathlib import Path
 

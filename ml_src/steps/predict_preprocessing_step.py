@@ -1,6 +1,6 @@
 from PIL import Image
 
-from ..classes_for_steps.preprocessing_strategy import ThresholdMethod, HuggingFacePreprocessingStrategy
+from ml_src.classes_for_steps.preprocessing_strategy import ThresholdMethod, HuggingFacePreprocessingStrategy
 
 
 # @step

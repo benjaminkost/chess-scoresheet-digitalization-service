@@ -3,7 +3,7 @@ import unittest
 from PIL import Image
 from datasets import Dataset
 
-from .data_module import HuggingFaceImageModule
+from .data_module import HuggingFaceImageDataModule
 from .ingest_data_strategy import HuggingFaceImageDataIngestorStrategy
 from .preprocessing_strategy import HuggingFacePreprocessingStrategy
 from .data_splitter_strategy import SimpleDataSplittingStrategy
@@ -19,10 +19,10 @@ class MyTestCase(unittest.TestCase):
         preprocessing_strategy = HuggingFacePreprocessingStrategy()
         data_splitter_strategy = SimpleDataSplittingStrategy()
         data_loader_strategy = HuggingFaceImageDatasetDataLoader()
-        cls.data_module = HuggingFaceImageModule(ingest_data_strategy=ingest_data_strategy,
-                                             preprocessing_strategy=preprocessing_strategy,
-                                             data_splitter_strategy=data_splitter_strategy,
-                                             dataloader_strategy=data_loader_strategy)
+        cls.data_module = HuggingFaceImageDataModule(ingest_data_strategy=ingest_data_strategy,
+                                                     preprocessing_strategy=preprocessing_strategy,
+                                                     data_splitter_strategy=data_splitter_strategy,
+                                                     dataloader_strategy=data_loader_strategy)
 
         # When
         cls.dataset = cls.data_module.ingest_data(owner=owner, dataset_name=dataset_name)

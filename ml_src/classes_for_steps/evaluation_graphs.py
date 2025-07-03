@@ -1,4 +1,4 @@
-from classes_for_steps.hyperparameter_util import ModelHyperparameter
+from ml_src.classes_for_steps.hyperparameter_util import ModelHyperparameter
 
 
 class ProgressBoard(ModelHyperparameter):  #@save

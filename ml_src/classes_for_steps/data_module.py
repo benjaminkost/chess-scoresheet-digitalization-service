@@ -46,7 +46,7 @@ class DataModule(DataIngestorStrategy, PreprocessingStrategy, DataSplittingStrat
         pass
 
 # Implement a concrete class for Image Data Ingestion
-class HuggingFaceImageModule(DataModule):
+class HuggingFaceImageDataModule(DataModule):
 
     def __init__(self, ingest_data_strategy: DataIngestorStrategy,
                  preprocessing_strategy: PreprocessingStrategy,

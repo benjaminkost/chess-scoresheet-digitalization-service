@@ -4,8 +4,8 @@ import os
 import pandas as pd
 from sklearn.model_selection import ParameterGrid
 
-from classes_for_steps.ingest_data_strategy import HuggingFaceImageDataIngestorStrategy
-from classes_for_steps.preprocessing_strategy import HuggingFacePreprocessingStrategy, ThresholdMethod
+from ml_src.classes_for_steps import HuggingFaceImageDataIngestorStrategy
+from ml_src.classes_for_steps import HuggingFacePreprocessingStrategy, ThresholdMethod
 # Configure Logger:
 # ANSI Escape Code for white letters
 WHITE = "\033[37m"

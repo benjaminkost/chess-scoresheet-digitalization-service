@@ -2,7 +2,7 @@ import socket
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from .controllers import imageController
+from web_service.controllers import imageController
 
 def get_ip():
     return socket.gethostbyname(socket.gethostname())

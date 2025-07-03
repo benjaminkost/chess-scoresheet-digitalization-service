@@ -2,9 +2,9 @@ import unittest
 import cv2
 import numpy as np
 
-from ...classes_for_steps.preprocessing_strategy import HuggingFacePreprocessingStrategy, \
+from ml_src.classes_for_steps.preprocessing_strategy import HuggingFacePreprocessingStrategy, \
     ThresholdMethod
-from ...classes_for_steps.ingest_data_strategy import HuggingFaceImageDataIngestorStrategy
+from ml_src.classes_for_steps.ingest_data_strategy import HuggingFaceImageDataIngestorStrategy
 
 
 class MyTestCase(unittest.TestCase):

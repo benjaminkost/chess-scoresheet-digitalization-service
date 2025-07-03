@@ -1,6 +1,6 @@
 from zenml import pipeline
-from ..steps.dockerize_mlflow_model import dockerize_mlflow_model_with_python
-from ..steps.push_docker_image_to_docker_hub_step import push_docker_image_to_docker_hub
+from ml_src.steps.dockerize_mlflow_model import dockerize_mlflow_model_with_python
+from ml_src.steps import push_docker_image_to_docker_hub
 
 
 @pipeline(enable_cache=False)

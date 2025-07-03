@@ -1,5 +1,4 @@
-from zenml import step
-from ..classes_for_steps.postprocessing_strategy import PostprocessingStrategy
+from ml_src.classes_for_steps.postprocessing_strategy import PostprocessingStrategy
 
 
 # @step
