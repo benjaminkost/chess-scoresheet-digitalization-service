@@ -6,7 +6,7 @@ click
 fastapi==0.115.12
 mlflow==2.21.2
 mlflow_skinny==2.21.2
-numpy==2.2.5
+numpy
 opencv-python==4.11.0.86
 pandas==2.2.3
 Pillow==11.2.1
@@ -15,3 +15,11 @@ starlette==0.46.2
 transformers==4.51.3
 zenml==0.82.1
 dagshub
+seaborn
+ibm_watson_machine_learning
+pytest
+pytest-dependency
+pre-commit
+matplotlib
+joblib
+pyyaml

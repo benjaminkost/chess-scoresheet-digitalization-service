@@ -2,7 +2,7 @@ import socket
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from app.api.endpoints.controllers import imageController
+from api.endpoints.controllers import imageController
 
 
 def get_ip():
