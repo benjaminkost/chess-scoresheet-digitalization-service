@@ -3,7 +3,7 @@ import os
 
 import aiofiles
 from fastapi import UploadFile
-from app.ml.pipelines import inference_pipeline
+from ml.run_inference import inference_pipeline
 
 logging.basicConfig(
     level=logging.INFO,  # Log-Ebene (z. B. DEBUG, INFO, WARNING, ERROR, CRITICAL)
