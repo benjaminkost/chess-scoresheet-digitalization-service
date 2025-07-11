@@ -3,11 +3,11 @@ import logging
 import numpy as np
 from PIL import Image
 
-from ml.steps.predict_postprocessing_step import postprocessing_prediction
-from ml.steps.predict_preprocessing_step import preprocessing_image
-from ml.steps.predictor import predictor
-from ml.steps.dynamic_importer import load_png_image
-from ml.steps.model_loader import load_model
+from src.ml.steps.predict_postprocessing_step import postprocessing_prediction
+from src.ml.steps.predict_preprocessing_step import preprocessing_image
+from src.ml.steps.predictor import predictor
+from src.ml.steps.dynamic_importer import load_png_image
+from src.ml.steps.model_loader import load_model
 
 # configure logger
 logging.basicConfig(
@@ -16,7 +16,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)  # Logger mit Modulnamen beziehen
 
-# @pipeline(enable_cache=False)
 def inference_pipeline(image_file_path: str, model_name: str):
     """
     Give a prediction for a given image

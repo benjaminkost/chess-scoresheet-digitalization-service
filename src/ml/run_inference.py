@@ -1,18 +1,15 @@
-import click
 from PIL import Image
+import os
+from src.ml.pipelines.inference_pipeline import inference_pipeline
 
-from ml.pipelines.inference_pipeline import inference_pipeline
+def run_main():
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    uploads_folder = os.path.abspath(os.path.join(dir_path, os.pardir))
 
-@click.command()
-@click.option(
-    "--stop-service",
-    is_flag=True,
-    default=False,
-    help="Stop the prediction service when done",
-)
-def run_main(stop_service: bool):
     # Define file path
-    file_path = "../../data/raw_data/unprocessed_hcs_data/images/001_1.png"
+    # TODO: correct file fetch
+    upload_files = os.listdir(uploads_folder)
+    file_path = upload_files[-1]
 
     # Define model name
     model_name = "trocr-base-handwritten-with-pre-and-post-processing"

@@ -12,7 +12,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)  # Logger mit Modulnamen beziehen
 
 
-# @step
 def load_model(model_name: str):
     """
 

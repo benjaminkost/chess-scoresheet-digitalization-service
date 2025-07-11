@@ -1,15 +1,18 @@
 import logging
 import os
-
 import aiofiles
 from fastapi import UploadFile
-from ml.run_inference import inference_pipeline
+from src.ml.run_inference import inference_pipeline
 
 logging.basicConfig(
     level=logging.INFO,  # Log-Ebene (z. B. DEBUG, INFO, WARNING, ERROR, CRITICAL)
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",  # Log-Format
 )
 logger = logging.getLogger(__name__)  # Logger mit Modulnamen beziehen
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+parent_dir = os.path.join(dir_path, os.pardir)
+uploads_dir = os.path.abspath(os.path.join(parent_dir, "uploads"))
 
 class ImageService:
     def __init__(self, file: UploadFile):
@@ -19,8 +22,8 @@ class ImageService:
         if not (".png" in self.file.filename or ".jpeg" in self.file.filename or ".jpg" in self.file.filename):
             return "This is not a image, the file has to of type: .png, jpeg or jpg"
         else:
-            async with aiofiles.open(f"./uploads/{self.file.filename}", "wb") as f:
-                logger.info(f"Storing image in uploads folder: ./uploads/{self.file.filename}")
+            async with aiofiles.open(f"{uploads_dir}/{self.file.filename}", "wb") as f:
+                logger.info(f"Storing image in uploads folder: {dir_path}/uploads/{self.file.filename}")
                 content = await self.file.read()
                 await f.write(content)
             return "File was saved successfully"
@@ -28,7 +31,7 @@ class ImageService:
     async def create_pgn_file(self, response):
         if response == "File was saved successfully":
             # load inference pipeline
-            filepath = f"./uploads/{self.file.filename}"
+            filepath = f"{uploads_dir}/{self.file.filename}"
 
             # Define model name
             model_name = "trocr-base-handwritten-with-pre-and-post-processing"

@@ -1,7 +1,5 @@
-from ml.scripts_for_steps.postprocessing_strategy import PostprocessingStrategy
+from src.ml.scripts_for_steps.postprocessing_strategy import PostprocessingStrategy
 
-
-# @step
 def postprocessing_prediction(list_of_predictions: list) -> list:
     postprocessing_strategy = PostprocessingStrategy()
 

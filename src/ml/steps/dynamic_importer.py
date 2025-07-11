@@ -1,8 +1,6 @@
 import numpy as np
 from PIL import Image
-from zenml import step
 
-# @step
 def load_png_image(file_path: str):
     """
     Should load the image file and return the image as PIL.Image.
