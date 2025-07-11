@@ -3,7 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: sh -c "uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
     image: ${DOCKER_USERNAME}/chess-scoresheet-digitalization:${DOCKER_IMAGE_VERSION}
     ports:
       - "8000:8000"
