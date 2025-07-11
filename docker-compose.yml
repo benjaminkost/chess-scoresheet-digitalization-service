@@ -1,0 +1,8 @@
+services:
+  chess-scoresheet-digitalization:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME}/chess-scoresheet-digitalization:${DOCKER_IMAGE_VERSION}
+    ports:
+      - "8000:8000"
