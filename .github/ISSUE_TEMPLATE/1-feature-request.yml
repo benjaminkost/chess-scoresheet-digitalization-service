@@ -1,5 +1,5 @@
 name: "✨ Feature Request"
-description: "Schlage eine neue Funktion oder Verbesserung vor."
+description: "Create a new feature or improve one"
 title: "[Feature] "
 labels:
   - "enhancement"
@@ -9,40 +9,40 @@ body:
   - type: markdown
     attributes:
       value: |
-        ## 📝 Feature Beschreibung
-        Eine klare und prägnante Beschreibung der gewünschten Funktion oder Verbesserung.
+        ## 📝 Feature Describtion
+        Clear description about the feature.
 
   - type: textarea
     id: motivation
     attributes:
-      label: "💡 Motivation und Nutzen"
-      description: "Erkläre, warum diese Funktion nützlich ist und welche Probleme sie löst."
-      placeholder: "Dieses Feature würde helfen, indem..."
+      label: "💡 Motivation"
+      description: "Explain why this feature is useful and what problems it solves."
+      placeholder: "This feature would help by..."
     validations:
       required: true
 
   - type: textarea
     id: proposed_solution
     attributes:
-      label: "🚀 Vorgeschlagene Lösung"
-      description: "Beschreibe eine mögliche Umsetzung oder Herangehensweise."
-      placeholder: "Eine mögliche Lösung wäre..."
+      label: "🚀 Proposed solution"
+      description: "Describe a possible solution."
+      placeholder: "A possible solution would be..."
     validations:
       required: false
 
   - type: textarea
     id: alternatives
     attributes:
-      label: "🔄 Alternativen"
-      description: "Hast du alternative Lösungen in Betracht gezogen? Falls ja, beschreibe sie hier."
-      placeholder: "Eine Alternative könnte sein..."
+      label: "🔄 Alternative"
+      description: "Can you think of alternative solutions? If yes, describe them."
+      placeholder: "An alternative solution could be..."
     validations:
       required: false
 
   - type: textarea
     id: additional_info
     attributes:
-      label: "📎 Zusätzliche Informationen"
-      description: "Füge weitere Details, Screenshots oder Beispiele hinzu."
+      label: "📎 Additional Information"
+      description: "Add further details, screenshots or examples."
     validations:
       required: false
