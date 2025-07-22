@@ -1,5 +1,5 @@
 name: "🧪 Unit Test Request"
-description: "Schlage einen neuen Unit Test vor oder melde fehlende Tests."
+description: "Suggest a new unit test or report missing tests."
 title: "[Test] "
 labels:
   - "test"
@@ -10,40 +10,39 @@ body:
   - type: markdown
     attributes:
       value: |
-        ## 📝 Unit Test Beschreibung
-        Eine klare und prägnante Beschreibung des benötigten Unit Tests.
+        ## 📝 Unit Test Describtion
+        A clear and concise description of the required unit tests.
 
   - type: textarea
     id: test_scenario
     attributes:
-      label: "🔍 Test-Szenario"
-      description: "Beschreibe das Szenario, das der Test abdecken soll."
-      placeholder: "Der Test sollte sicherstellen, dass..."
-    validations:
-      required: true
-
-  - type: textarea
-    id: expected_behavior
-    attributes:
-      label: "✅ Erwartetes Verhalten"
-      description: "Beschreibe, was der Test validieren oder sicherstellen soll."
-      placeholder: "Der Test sollte erwarten, dass..."
+      label: "🔍 Test-Scenarios"
+      description: "Describe the scenarios the test should cover."
+      value: |
+        1. Test description:
+          - Give:
+          - When: 
+          - Then:
+        2. Test description:
+          - Give:
+          - When: 
+          - Then:
     validations:
       required: true
 
   - type: textarea
     id: test_implementation
     attributes:
-      label: "🛠 Vorschlag zur Implementierung"
-      description: "Falls möglich, gib eine Idee oder ein Beispiel für die Testimplementierung an."
-      placeholder: "Ein möglicher Test könnte folgendermaßen aussehen..."
+      label: "🛠 Implementation proposal"
+      description: "If possible, provide an idea or example of the test implementation."
+      placeholder: "A possible test could look like this..."
     validations:
       required: false
 
   - type: textarea
     id: additional_info
     attributes:
-      label: "📎 Zusätzliche Informationen"
-      description: "Füge weitere relevante Informationen, Referenzen oder Beispiele hinzu."
+      label: "📎 Additional Information"
+      description: "Add any other relevant information, references, or examples."
     validations:
       required: false
