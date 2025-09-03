@@ -21,6 +21,7 @@ starlette = "*"
 dagshub = "*"
 datasets = "*"
 dotenv = "*"
+pytest-mock = "^3.14.1"
 
 [build-system]
 requires = ["poetry-core"]
