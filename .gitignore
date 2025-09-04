@@ -174,9 +174,7 @@ cython_debug/
 .pypirc
 
 # Ignore data
-*.png
-*.jpeg
-*.jpg
+src/uploads/*.png
 *.arrow
 
 # IDE
