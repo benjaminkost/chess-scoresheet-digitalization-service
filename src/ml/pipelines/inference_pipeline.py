@@ -1,6 +1,4 @@
 import logging
-
-import numpy as np
 from PIL import Image
 
 from src.ml.steps.decode_prediction import decode_prediction
