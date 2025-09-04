@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def predict(pixel_values: Tensor) -> Any | None:
     """
-    Calling the endpoint of the mlflow container /invocation to get a prediction from model
+    Calling the endpoint of the mlflow container /invocations to get a prediction from model
 
     :param pixel_values: Torch.Tensor that is the tokenized image for inference.
     :return: json (dict) for the prediction.
@@ -28,7 +28,7 @@ def predict(pixel_values: Tensor) -> Any | None:
         prediction = requests.post(prediction_url, data=pixel_values)
         return prediction.json()
     except requests.RequestException as e:
-        logger.error(f"Error when calling the /invocation endpoint of mlflow container: {e}")
+        logger.error(f"Error when calling the /invocations endpoint of mlflow container: {e}")
 
 
 def check_health() -> bool:

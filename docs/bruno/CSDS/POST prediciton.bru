@@ -1,0 +1,11 @@
+meta {
+  name: POST prediciton
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{MLFLOW_DOCKER_BASE_URL}}/invocations
+  body: none
+  auth: inherit
+}

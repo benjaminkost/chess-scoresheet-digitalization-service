@@ -6,3 +6,7 @@ services:
     image: ${DOCKER_USERNAME}/chess-scoresheet-digitalization:${DOCKER_IMAGE_VERSION}
     ports:
       - "8000:8000"
+  hcs-model:
+    image: ${DOCKER_USERNAME}/${MODEL_NAME}:${MODEL_VERSION}
+    ports:
+      - "1000:8080"
