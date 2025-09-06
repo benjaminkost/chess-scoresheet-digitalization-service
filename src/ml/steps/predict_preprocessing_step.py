@@ -4,7 +4,7 @@ from src.ml.scripts_for_steps.preprocessing_strategy import ThresholdMethod, Hug
 
 
 # @step
-def preprocessing_image(image: Image) -> list:
+def preprocessing_image(image: Image.Image) -> list:
     # load preprocessing strategy
     ## Best parameters tested with tuning: src/tuning/preprocessing/preprocessing_hyperparameter_tuning.py
     kernelsize_gaussianBlur = (5, 5)

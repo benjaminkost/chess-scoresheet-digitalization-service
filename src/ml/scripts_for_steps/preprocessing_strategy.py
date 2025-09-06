@@ -632,7 +632,7 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         return dataset_cut_out_image_to_label_dataset
 
-    def generate_from_four_contour_points_and_image_a_cut_out_image(self, list_contours, image: PIL.Image):
+    def generate_from_four_contour_points_and_image_a_cut_out_image(self, list_contours, image: PIL.Image.Image):
         """
         Cut out image with contours defined in list_contours from the bigger image
 

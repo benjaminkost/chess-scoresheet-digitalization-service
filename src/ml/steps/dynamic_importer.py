@@ -1,11 +1,10 @@
-import numpy as np
 from PIL import Image
 
-def load_png_image(file_path: str):
+def load_png_image(file_path: str) -> Image.Image:
     """
     Should load the image file and return the image as PIL.Image.
 
-    :param file_path: directory for a image file that was uploaded by a user
+    :param file_path: directory for an image file that was uploaded by a user
     :return: image as PIL.Image
     """
     if not file_path:
@@ -16,7 +15,4 @@ def load_png_image(file_path: str):
     # Open image file from file_path
     image = Image.open(file_path)
 
-    # Convert PIL.Image to numpy
-    np_img = np.array(image)
-
-    return np_img
+    return image

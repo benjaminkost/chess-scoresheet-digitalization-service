@@ -1,5 +1,4 @@
 import logging
-from PIL import Image
 
 from src.ml.steps.decode_prediction import decode_prediction
 from src.ml.steps.load_processor import load_processor
@@ -25,17 +24,14 @@ def inference_pipeline(image_file_path: str):
 
     # Load image that was uploaded
     logger.info(f"Loading image from {image_file_path}")
-    np_img = load_png_image(image_file_path)
-
-    # Convert np_array to PIL
-    logger.info(f"Converting np_array to PIL")
-    input_image = Image.fromarray(np_img)
+    input_image = load_png_image(image_file_path)
 
     # Preprocess image
     logger.info(f"Preprocessing image")
     list_of_move_boxes = preprocessing_image(input_image)
 
     # Load Processor to tokenize images
+    logger.info(f"Load Processor")
     processor = load_processor()
 
     # Run the prediction
@@ -50,7 +46,7 @@ def inference_pipeline(image_file_path: str):
 
         # predict text on image
         prediction_ids = predictor(image_as_torch_tensor)
-        prediction = decode_prediction(prediction_ids)
+        prediction = decode_prediction(processor, prediction_ids)
 
         # Add it to the list of predictions for the move boxes
         list_of_predictions.append(prediction)
