@@ -1,13 +1,12 @@
 import logging
 
-import numpy as np
-from PIL import Image
-
+from src.ml.steps.decode_prediction import decode_prediction
+from src.ml.steps.load_processor import load_processor
 from src.ml.steps.predict_postprocessing_step import postprocessing_prediction
 from src.ml.steps.predict_preprocessing_step import preprocessing_image
 from src.ml.steps.predictor import predictor
 from src.ml.steps.dynamic_importer import load_png_image
-from src.ml.steps.model_loader import load_model
+from src.ml.steps.tokenize_image import tokenize_image
 
 # configure logger
 logging.basicConfig(
@@ -16,7 +15,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)  # Logger mit Modulnamen beziehen
 
-def inference_pipeline(image_file_path: str, model_name: str):
+def inference_pipeline(image_file_path: str):
     """
     Give a prediction for a given image
 
@@ -25,19 +24,15 @@ def inference_pipeline(image_file_path: str, model_name: str):
 
     # Load image that was uploaded
     logger.info(f"Loading image from {image_file_path}")
-    np_img = load_png_image(image_file_path)
-
-    # Convert np_array to PIL
-    logger.info(f"Converting np_array to PIL")
-    input_image = Image.fromarray(np_img)
+    input_image = load_png_image(image_file_path)
 
     # Preprocess image
     logger.info(f"Preprocessing image")
     list_of_move_boxes = preprocessing_image(input_image)
 
-    # Load the registered model
-    logger.info(f"Loading model: {model_name}")
-    model = load_model(model_name)
+    # Load Processor to tokenize images
+    logger.info(f"Load Processor")
+    processor = load_processor()
 
     # Run the prediction
     list_of_predictions = []
@@ -46,12 +41,12 @@ def inference_pipeline(image_file_path: str, model_name: str):
         # convert images to RGB
         move_box = move_box.convert("RGB")
 
-        # convert PIL image to numpy array
-        np_move_box_img = np.array(move_box)
+        # convert PIL image to torch.Tensor
+        image_as_torch_tensor = tokenize_image(processor, move_box)
 
         # predict text on image
-        prediction_dict = predictor(model, np_move_box_img)
-        prediction = prediction_dict["prediction"]
+        prediction_ids = predictor(image_as_torch_tensor)
+        prediction = decode_prediction(processor, prediction_ids)
 
         # Add it to the list of predictions for the move boxes
         list_of_predictions.append(prediction)

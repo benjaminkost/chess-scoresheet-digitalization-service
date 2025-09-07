@@ -1,0 +1,15 @@
+meta {
+  name: POST prediciton
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{MLFLOW_DOCKER_BASE_URL}}/invocations
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  encoded_image: @file(/Users/benkostka/PycharmProjects/chess-scoresheet-digitalization-service/tests/data/encoded_image_001_0_1_black.csv)
+}

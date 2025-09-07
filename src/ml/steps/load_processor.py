@@ -1,7 +1,6 @@
 import logging
-
-import torch
-from src.api.clients.mlflow_model_client import predict
+import os
+from transformers import TrOCRProcessor
 
 # Configure Logger:
 # ANSI Escape Code for white letters
@@ -23,16 +22,11 @@ handler.setFormatter(formatter)
 # Handler for Logger added
 logger.addHandler(handler)
 
-def predictor(pixel_values: torch.Tensor) -> torch.Tensor:
-    """
-    Predict character from image with a model
 
-    :param pixel_values: tokenize image
-    :return: Ids from characters that were detected by the model
-    """
-    logger.info(f"Prediction step starts...")
+def load_processor():
+    hf_uri = f"{os.getenv("HF_USER_NAME")}/{os.getenv("HF_PROCESSOR_NAME")}"
+    processor = TrOCRProcessor.from_pretrained(hf_uri)
 
-    # Run inference
-    prediction = predict(pixel_values)
+    logger.info(f"Tokenizing image with processor from huggingface '{hf_uri}'")
 
-    return prediction
+    return processor

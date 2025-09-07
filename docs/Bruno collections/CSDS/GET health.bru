@@ -1,0 +1,11 @@
+meta {
+  name: GET health
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{MLFLOW_DOCKER_BASE_URL}}/health
+  body: none
+  auth: inherit
+}

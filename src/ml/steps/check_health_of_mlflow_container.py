@@ -1,7 +1,6 @@
 import logging
 
-import torch
-from src.api.clients.mlflow_model_client import predict
+from src.api.clients.mlflow_model_client import check_health
 
 # Configure Logger:
 # ANSI Escape Code for white letters
@@ -23,16 +22,7 @@ handler.setFormatter(formatter)
 # Handler for Logger added
 logger.addHandler(handler)
 
-def predictor(pixel_values: torch.Tensor) -> torch.Tensor:
-    """
-    Predict character from image with a model
+def check_health_of_mlflow_container():
+    logger.info("Checking health of MLflow container")
 
-    :param pixel_values: tokenize image
-    :return: Ids from characters that were detected by the model
-    """
-    logger.info(f"Prediction step starts...")
-
-    # Run inference
-    prediction = predict(pixel_values)
-
-    return prediction
+    return check_health()
