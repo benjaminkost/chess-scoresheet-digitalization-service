@@ -4,11 +4,25 @@ import aiofiles
 from fastapi import UploadFile
 from src.ml.run_inference import inference_pipeline
 
-logging.basicConfig(
-    level=logging.INFO,  # Log-Ebene (z. B. DEBUG, INFO, WARNING, ERROR, CRITICAL)
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",  # Log-Format
-)
-logger = logging.getLogger(__name__)  # Logger mit Modulnamen beziehen
+# Configure Logger:
+# ANSI Escape Code for white letters
+WHITE = "\033[37m"
+RESET = "\033[0m"  # reset of color
+
+# Logger configure
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Console-Handler
+handler = logging.StreamHandler()
+handler.setLevel(logging.DEBUG)
+
+# Formatter with ANSI Escape Code for white letters
+formatter = logging.Formatter(f'{WHITE}%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s{RESET}')
+handler.setFormatter(formatter)
+
+# Handler for Logger added
+logger.addHandler(handler)
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 parent_dir = os.path.join(dir_path, os.pardir)
@@ -17,10 +31,16 @@ uploads_dir = os.path.abspath(os.path.join(parent_dir, "uploads"))
 class ImageService:
     def __init__(self, file: UploadFile):
         self.file = file
-    async def store_image(self):
-        logger.info(f"{os.getcwd()}")
+
+    async def store_image(self) -> str:
+        """
+        Stores file to the upload folder in the file dictory
+
+        :return: Response if the file was successfully saved
+        """
+        print("test")
         if not (".png" in self.file.filename or ".jpeg" in self.file.filename or ".jpg" in self.file.filename):
-            return "This is not a image, the file has to of type: .png, jpeg or jpg"
+            raise TypeError("This is not a image, the file has to be of type: .png, jpeg or jpg")
         else:
             async with aiofiles.open(f"{uploads_dir}/{self.file.filename}", "wb") as f:
                 logger.info(f"Storing image in uploads folder: {dir_path}/uploads/{self.file.filename}")

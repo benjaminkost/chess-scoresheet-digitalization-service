@@ -2,7 +2,7 @@ import http
 
 from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import FileResponse
-from src.services.imageService import ImageService
+from src.services.image_service import ImageService
 import logging
 from pathlib import Path
 
@@ -34,6 +34,7 @@ async def upload_image(file: UploadFile = File(...)):
             return {"error": "No PGN-File found"}
 
     except TypeError as te:
+        logging.error(f"TypeError when saving: {te}")
         return te
     except Exception as e:
         logging.error(f"Error when saving: {str(e)}")
