@@ -34,13 +34,12 @@ class ImageService:
 
     async def store_image(self) -> str:
         """
-        Stores file to the upload folder in the file dictory
+        Stores file to the upload folder in the file directory
 
         :return: Response if the file was successfully saved
         """
-        print("test")
         if not (".png" in self.file.filename or ".jpeg" in self.file.filename or ".jpg" in self.file.filename):
-            raise TypeError("This is not a image, the file has to be of type: .png, jpeg or jpg")
+            raise TypeError(f"File has to be type of: .png, jpeg or jpg BUT was {self.file.filename.split(".")[-1]}")
         else:
             async with aiofiles.open(f"{uploads_dir}/{self.file.filename}", "wb") as f:
                 logger.info(f"Storing image in uploads folder: {dir_path}/uploads/{self.file.filename}")
