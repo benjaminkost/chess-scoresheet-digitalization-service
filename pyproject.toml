@@ -23,6 +23,7 @@ datasets = "*"
 dotenv = "*"
 pytest-mock = "^3.14.1"
 pytest-asyncio = "^1.1.0"
+coverage = "^7.10.6"
 
 [build-system]
 requires = ["poetry-core"]
