@@ -1,5 +1,4 @@
 import io
-import time
 from io import BytesIO
 import logging
 from pathlib import Path
@@ -37,7 +36,7 @@ def create_dummy_file() -> UploadFile:
 @pytest.mark.asyncio
 class TestImageService:
 
-    async def test_store_image_use_non_compatible_file_extension_raises_type_error(self):
+    async def test_save_image_use_non_compatible_file_extension_raises_type_error(self):
         file = create_dummy_file()
         sut = ImageService(file)
 
@@ -46,7 +45,7 @@ class TestImageService:
 
         assert te.value.args[0] == f"File has to be type of: .png, jpeg or jpg BUT was {file.filename.split(".")[-1]}"
 
-    async def test_store_image_use_compatible_saves_file(self, mocker, caplog, get_data_path):
+    async def test_save_image_use_compatible_saves_file(self, mocker, caplog, get_data_path):
         file = create_upload_file(f"{str(get_data_path)}/images/001_0.png")
         mock_file = mocker.patch("aiofiles.open")
         mock_file.return_value.write.return_value = None
@@ -92,7 +91,7 @@ async def test_save_pgn_file_use_valid_game_write_to_filesystem(mocker, caplog):
     mock_file.return_value.write.return_value = None
     spy_log = caplog.at_level(logging.INFO)
     mock_time = mocker.patch("time.time")
-    mocked_current_time = float(1234567890.12345678901234567890)
+    mocked_current_time = float(1234567890.1234)
     mock_time.return_value = mocked_current_time
 
     result = await save_pgn_file(chess_game)

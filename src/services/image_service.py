@@ -67,10 +67,10 @@ async def save_pgn_file(chess_game: Game) -> Path | None:
             logger.info(f"Writing PGN file to: {pgn_file_path}")
             await f.write(str(chess_game))
         logger.info(f"File was saved successfully")
-        return Path(pgn_file_path)
-    except Exception as e:
-        logger.error(f"An error occurred while saving the file: {e}")
 
+        return Path(pgn_file_path)
+    except Exception as ex:
+        logger.error(f"An error occurred while saving the file: {ex}")
 
 class ImageService:
     def __init__(self, file: UploadFile):
