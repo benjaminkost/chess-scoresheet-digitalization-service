@@ -18,17 +18,14 @@ image_controller = APIRouter(
 )
 async def upload_image(file: UploadFile = File(...)):
     try:
-        image_service = ImageService(file=file)
-        response = await image_service.store_image()
-        # Create PGN File
-        pgn_file_path = await image_service.create_pgn_file(response)
+        pgn_file_path = ImageService(file=file).create_pgn_file()
 
         # Check if PGN-File actually exists
-        if pgn_file_path and Path(pgn_file_path).exists():
+        if pgn_file_path.exists():
             return FileResponse(
-                path=pgn_file_path,
+                path=str(pgn_file_path),
                 media_type="text/plain",
-                filename=Path(pgn_file_path).name
+                filename=pgn_file_path.name
             )
         else:
             return {"error": "No PGN-File found"}

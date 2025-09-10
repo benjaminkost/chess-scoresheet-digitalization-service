@@ -1,5 +1,7 @@
 import logging
 
+import chess.pgn
+
 from src.ml.steps.decode_prediction import decode_prediction
 from src.ml.steps.load_processor import load_processor
 from src.ml.steps.predict_postprocessing_step import postprocessing_prediction
@@ -15,7 +17,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)  # Logger mit Modulnamen beziehen
 
-def inference_pipeline(image_file_path: str):
+def inference_pipeline(image_file_path: str) -> chess.pgn.Game:
     """
     Give a prediction for a given image
 
@@ -53,6 +55,6 @@ def inference_pipeline(image_file_path: str):
 
     # Post-process prediction list
     logger.info(f"Post-processing prediction")
-    pgn_str = postprocessing_prediction(list_of_predictions)
+    chess_game = postprocessing_prediction(list_of_predictions)
 
-    return pgn_str
+    return chess_game
