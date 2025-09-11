@@ -16,7 +16,13 @@ image_controller = APIRouter(
     "/upload",
     status_code=http.HTTPStatus.CREATED
 )
-async def upload_image(file: UploadFile = File(...)):
+async def upload_image(file: UploadFile = File(...)) -> dict[str, str]:
+    """
+    Create a chess game in PGN format from uploaded game
+
+    :param file: image of a chess scoresheet
+    :return:
+    """
     try:
         pgn_file_path = ImageService(file=file).create_pgn_file()
 
@@ -32,7 +38,7 @@ async def upload_image(file: UploadFile = File(...)):
 
     except TypeError as te:
         logging.error(f"TypeError when saving: {te}")
-        return te
+        return {"error": str(te)}
     except Exception as e:
         logging.error(f"Error when saving: {str(e)}")
-        return {"error": {str(e)}}
+        return {"error": str(e)}
