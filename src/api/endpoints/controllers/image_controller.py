@@ -4,7 +4,6 @@ from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import FileResponse
 from src.services.image_service import ImageService
 import logging
-from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
 
@@ -14,9 +13,11 @@ image_controller = APIRouter(
 
 @image_controller.post(
     "/upload",
+    response_class=FileResponse,
+    response_model=None,
     status_code=http.HTTPStatus.CREATED
 )
-async def upload_image(file: UploadFile = File(...)) -> dict[str, str]:
+async def upload_image(file: UploadFile = File(...)) -> dict[str, str] | FileResponse:
     """
     Create a chess game in PGN format from uploaded game
 
@@ -24,7 +25,7 @@ async def upload_image(file: UploadFile = File(...)) -> dict[str, str]:
     :return:
     """
     try:
-        pgn_file_path = ImageService(file=file).create_pgn_file()
+        pgn_file_path = await ImageService(file=file).create_pgn_file()
 
         # Check if PGN-File actually exists
         if pgn_file_path.exists():

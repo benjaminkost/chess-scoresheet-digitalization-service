@@ -45,8 +45,8 @@ class TestImageService:
 
         assert te.value.args[0] == f"File has to be type of: .png, jpeg or jpg BUT was {file.filename.split(".")[-1]}"
 
-    async def test_save_image_use_compatible_saves_file(self, mocker, caplog, get_data_path):
-        file = create_upload_file(f"{str(get_data_path)}/images/001_0.png")
+    async def test_save_image_use_compatible_saves_file(self, mocker, caplog, get_test_data_path):
+        file = create_upload_file(f"{str(get_test_data_path)}/images/001_0.png")
         mock_file = mocker.patch("aiofiles.open")
         mock_file.return_value.write.return_value = None
         spy_log = caplog.at_level(logging.INFO)
@@ -58,7 +58,7 @@ class TestImageService:
         assert spy_log.args[0].messages[0] == f"Storing image in uploads folder: {get_root_dir_path()}/src/uploads/{file.filename}"
         assert result == Path(f"{get_root_dir_path()}/src/uploads/{file.filename}")
 
-def test_generate_chess_game_from_image_use_no_pgn_formated_file_raises_error(mocker, get_data_path):
+def test_generate_chess_game_from_image_use_no_pgn_formated_file_raises_error(mocker, get_test_data_path):
     pgn = io.StringIO("1. piacpq e5 2. d4")
     mock_chess_game_wrong_pgn = chess.pgn.read_game(pgn)
     mock_inference_pipeline = mocker.patch(f"{path_of_sut_script}.inference_pipeline")
@@ -71,7 +71,7 @@ def test_generate_chess_game_from_image_use_no_pgn_formated_file_raises_error(mo
     assert ex.value.args[0] == "Generated PGN is not in valid PGN format"
     assert mock_inference_pipeline.call_count == 1
 
-def test_generate_chess_game_from_image_use_valid_pgn_formated_file_raises_error(mocker, get_data_path):
+def test_generate_chess_game_from_image_use_valid_pgn_formated_file_raises_error(mocker, get_test_data_path):
     pgn = io.StringIO("1. e4 e5 2. d4")
     mock_chess_game_wrong_pgn = chess.pgn.read_game(pgn)
     mock_inference_pipeline = mocker.patch(f"{path_of_sut_script}.inference_pipeline")
