@@ -23,7 +23,8 @@ handler.setFormatter(formatter)
 # Handler for Logger added
 logger.addHandler(handler)
 
-def predictor(pixel_values: torch.Tensor) -> torch.Tensor:
+
+def predict_chess_move(pixel_values: torch.Tensor) -> torch.Tensor:
     """
     Predict character from image with a model
 

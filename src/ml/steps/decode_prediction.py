@@ -1,6 +1,7 @@
-# Configure Logger:
-# ANSI Escape Code for white letters
 import logging
+
+import torch
+from transformers import ProcessorMixin, TrOCRProcessor
 
 WHITE = "\033[37m"
 RESET = "\033[0m"  # reset of color
@@ -21,7 +22,7 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-def decode_prediction(processor, prediction) -> str:
+def decode_prediction(processor: TrOCRProcessor, prediction: torch.Tensor) -> str:
     """
     Decode the return of the transformer model (like TrOCR) which are ids
 
@@ -29,7 +30,7 @@ def decode_prediction(processor, prediction) -> str:
     :param prediction: Prediction/Ids returned by the model
     :return: Decoded prediction, which are normal characters
     """
-    logger.info(f"Decode ids returned by the model")
+    logger.info("Decode ids returned by the model... ")
 
     decoded_prediction = processor.batch_decode(prediction, skip_special_tokens=True)[0]
 

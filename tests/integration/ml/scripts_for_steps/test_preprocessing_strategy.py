@@ -3,7 +3,6 @@ import unittest
 import numpy as np
 from datasets import Dataset
 
-from tests.util.ingest_data_strategy import HuggingFaceImageDataIngestorStrategy
 from src.ml.scripts_for_steps.preprocessing_strategy import HuggingFacePreprocessingStrategy
 
 

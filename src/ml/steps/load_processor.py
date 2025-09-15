@@ -1,6 +1,8 @@
 import logging
 import os
-from transformers import TrOCRProcessor
+
+from dotenv import load_dotenv
+from transformers import TrOCRProcessor, ProcessorMixin
 
 # Configure Logger:
 # ANSI Escape Code for white letters
@@ -23,10 +25,19 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-def load_processor():
+def load_processor() -> ProcessorMixin:
+    """
+    Loads processor/ tokenizer from huggingface for transformer model
+
+    :return: Processor/ Tokenizer for tokenizing image
+    """
+    load_dotenv()
     hf_uri = f"{os.getenv("HF_USER_NAME")}/{os.getenv("HF_PROCESSOR_NAME")}"
+
+    logger.info(f"Loading processor from huggingface with URI: '{hf_uri}'")
+
     processor = TrOCRProcessor.from_pretrained(hf_uri)
 
-    logger.info(f"Tokenizing image with processor from huggingface '{hf_uri}'")
+    logger.info(f"Processor loaded from huggingface with URI: '{hf_uri}'")
 
     return processor

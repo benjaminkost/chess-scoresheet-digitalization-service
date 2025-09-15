@@ -1,6 +1,7 @@
 import logging
 import torch
 from PIL.Image import Image
+from transformers import TrOCRProcessor
 
 # Configure Logger:
 # ANSI Escape Code for white letters
@@ -22,7 +23,7 @@ handler.setFormatter(formatter)
 # Handler for Logger added
 logger.addHandler(handler)
 
-def tokenize_image(processor, image: Image) -> torch.Tensor:
+def tokenize_image(processor: TrOCRProcessor, image: Image) -> torch.Tensor:
     """
     Preparing the image for a transformer model (like TrOCR) to be used for inference
 

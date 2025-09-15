@@ -4,10 +4,10 @@ from PIL import Image
 from src.ml.pipelines.inference_pipeline import inference_pipeline
 
 
-def test_inference_pipeline(mocker, get_data_path):
+def test_inference_pipeline(mocker, get_test_data_path):
     # Give
     path_of_sut_script = "src.ml.pipelines.inference_pipeline"
-    image_file_path = get_data_path / "images" / "001_0.png"
+    image_file_path = get_test_data_path / "images" / "001_0.png"
     mock_image = mocker.patch(f"{path_of_sut_script}.load_png_image")
     mock_image.return_value = Image.new("RGB", (10, 10))
 
@@ -20,7 +20,7 @@ def test_inference_pipeline(mocker, get_data_path):
     mock_tokenize_image = mocker.patch(f"{path_of_sut_script}.tokenize_image")
     mock_tokenize_image.return_value = torch.tensor([[[1, 2, 3],[4, 5, 6],]])
 
-    mock_prediction_ids = mocker.patch(f"{path_of_sut_script}.predictor")
+    mock_prediction_ids = mocker.patch(f"{path_of_sut_script}.predict_chess_move")
     mock_prediction_ids.return_value = torch.tensor([[[1, 2, 3],[4, 5, 6],]])
 
     mock_prediction = mocker.patch(f"{path_of_sut_script}.decode_prediction")
