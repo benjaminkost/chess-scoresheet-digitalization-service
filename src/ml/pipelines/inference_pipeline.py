@@ -6,7 +6,7 @@ from src.ml.steps.decode_prediction import decode_prediction
 from src.ml.steps.load_processor import load_processor
 from src.ml.steps.postprocessing_step import postprocessing_prediction
 from src.ml.steps.preprocessing_step import preprocessing_image
-from src.ml.steps.predictor import predictor
+from src.ml.steps.predictor import predict_chess_move
 from src.ml.steps.dynamic_importer import load_png_image
 from src.ml.steps.tokenize_image import tokenize_image
 
@@ -47,7 +47,7 @@ def inference_pipeline(image_file_path: str) -> chess.pgn.Game:
         image_as_torch_tensor = tokenize_image(processor, move_box)
 
         # predict text on image
-        prediction_ids = predictor(image_as_torch_tensor)
+        prediction_ids = predict_chess_move(image_as_torch_tensor)
         prediction = decode_prediction(processor, prediction_ids)
 
         # Add it to the list of predictions for the move boxes
