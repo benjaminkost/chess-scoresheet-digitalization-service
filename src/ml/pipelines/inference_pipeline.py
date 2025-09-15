@@ -5,7 +5,7 @@ import chess.pgn
 from src.ml.steps.decode_prediction import decode_prediction
 from src.ml.steps.load_processor import load_processor
 from src.ml.steps.postprocessing_step import postprocessing_prediction
-from src.ml.steps.predict_preprocessing_step import preprocessing_image
+from src.ml.steps.preprocessing_step import preprocessing_image
 from src.ml.steps.predictor import predictor
 from src.ml.steps.dynamic_importer import load_png_image
 from src.ml.steps.tokenize_image import tokenize_image

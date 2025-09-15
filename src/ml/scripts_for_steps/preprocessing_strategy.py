@@ -148,6 +148,47 @@ class HuggingFacePreprocessingStrategy(PreprocessingStrategy):
 
         return dataset_move_boxes_with_labels
 
+    def preprocess_image(self, image: Image.Image, threshold_method:ThresholdMethod=ThresholdMethod.OTSU) -> list[Image.Image]:
+        """
+        Cutting out the move boxes from the given image of the chess scoresheet
+
+        :param threshold_method: Method for determining what background and front is
+        :param image: Image chess scoresheet
+        :return: List of move boxes
+        """
+
+        # Guard clauses
+        if image is None:
+            raise ValueError("Image can not be None")
+
+        try:
+            # Image into gray scale
+            image_gray_scaled = image.convert("L")
+
+            # Convert gray-scale image to binary image with otsu's method
+            image_binary = self.process_image_gray_scaled_to_binary_with_threshold(image_gray_scaled)
+
+            ## Generate image containing only grid lines
+            image_only_grid_lines = self.process_binary_image_to_grid_lines(image_binary)
+
+            ## Find contours in image with only grid lines
+            list_of_contour_for_image = self.generate_binary_grid_image_to_list_of_contours(
+                image_only_grid_lines)
+
+            ## Cut out boxes with padding
+            list_cut_out_move_boxes = []
+            for contour in list_of_contour_for_image:
+                cut_out_image = self.generate_from_four_contour_points_and_image_a_cut_out_image(
+                    contour, image)
+                cut_out_image_rgb = cut_out_image.convert("RGB")
+                list_cut_out_move_boxes.append(cut_out_image_rgb)
+
+            return list_cut_out_move_boxes
+        except ValueError as ve:
+            raise ve
+        except Exception as ex:
+            raise ex
+
     def convert_dataset_to_list(self, dataset: Dataset, split_column: str, feature_column: str, label_column: str) -> list:
         """
         Convert dataset of a defined split to list

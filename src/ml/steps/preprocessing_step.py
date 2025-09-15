@@ -1,10 +1,35 @@
-from PIL import Image
+import logging
 
+from PIL import Image
 from src.ml.scripts_for_steps.preprocessing_strategy import ThresholdMethod, HuggingFacePreprocessingStrategy
 
+# Configure Logger:
+# ANSI Escape Code for white letters
+WHITE = "\033[37m"
+RESET = "\033[0m"  # reset of color
 
-# @step
+# Logger configure
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Console-Handler
+handler = logging.StreamHandler()
+handler.setLevel(logging.DEBUG)
+
+# Formatter with ANSI Escape Code for white letters
+formatter = logging.Formatter(f'{WHITE}%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s{RESET}')
+handler.setFormatter(formatter)
+
+# Handler for Logger added
+logger.addHandler(handler)
+
 def preprocessing_image(image: Image.Image) -> list:
+    """
+    Cutting out the move boxes from the given image of the chess scoresheet
+
+    :param image: Image chess scoresheet
+    :return: List of move boxes
+    """
     # load preprocessing strategy
     ## Best parameters tested with tuning: src/tuning/preprocessing/preprocessing_hyperparameter_tuning.py
     kernelsize_gaussianBlur = (5, 5)
@@ -31,23 +56,8 @@ def preprocessing_image(image: Image.Image) -> list:
         dilation_iterations=dilation_iterations
     )
 
-    # Image into gray scale
-    image_gray_scaled = image.convert("L")
+    logger.info(f"Preprocessing strategy initialized with parameters: {preprocessing_strategy.__dict__}")
 
-    # Convert gray-scale image to binary image with otsu's method
-    image_binary = preprocessing_strategy.process_image_gray_scaled_to_binary_with_threshold(image_gray_scaled)
-
-    ## Generate image containing only grid lines
-    image_only_grid_lines = preprocessing_strategy.process_binary_image_to_grid_lines(image_binary)
-
-    ## Find contours in image with only grid lines
-    list_of_contour_for_image = preprocessing_strategy.generate_binary_grid_image_to_list_of_contours(image_only_grid_lines)
-
-    ## Cut out boxes with padding
-    list_cut_out_move_boxes = []
-    for contour in list_of_contour_for_image:
-        cut_out_image = preprocessing_strategy.generate_from_four_contour_points_and_image_a_cut_out_image(contour, image)
-        cut_out_image_rgb = cut_out_image.convert("RGB")
-        list_cut_out_move_boxes.append(cut_out_image_rgb)
+    list_cut_out_move_boxes = preprocessing_strategy.preprocess_image(image)
 
     return list_cut_out_move_boxes
