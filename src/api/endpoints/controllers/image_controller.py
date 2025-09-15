@@ -25,11 +25,11 @@ handler.setFormatter(formatter)
 # Handler for Logger added
 logger.addHandler(handler)
 
-image_controller = APIRouter(
+ImageController = APIRouter(
     prefix="/api/image"
 )
 
-@image_controller.post(
+@ImageController.post(
     "/upload",
     response_class=FileResponse,
     response_model=None,

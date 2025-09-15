@@ -2,7 +2,7 @@ import socket
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from src.api.endpoints.controllers import image_controller
+from src.api.endpoints.controllers.image_controller import ImageController
 
 def get_ip():
     return socket.gethostbyname(socket.gethostname())
@@ -14,7 +14,7 @@ SERVER_IP = get_ip()
 app = FastAPI()
 
 # Include routing to access domain-specific controllers
-app.include_router(imageController.image_controller)
+app.include_router(ImageController)
 
 # Manage access regarding: CORS (Access-controll-allow-origin), etc.
 origins = [

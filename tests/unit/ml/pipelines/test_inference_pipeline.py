@@ -20,7 +20,7 @@ def test_inference_pipeline(mocker, get_test_data_path):
     mock_tokenize_image = mocker.patch(f"{path_of_sut_script}.tokenize_image")
     mock_tokenize_image.return_value = torch.tensor([[[1, 2, 3],[4, 5, 6],]])
 
-    mock_prediction_ids = mocker.patch(f"{path_of_sut_script}.predictor")
+    mock_prediction_ids = mocker.patch(f"{path_of_sut_script}.predict_chess_move")
     mock_prediction_ids.return_value = torch.tensor([[[1, 2, 3],[4, 5, 6],]])
 
     mock_prediction = mocker.patch(f"{path_of_sut_script}.decode_prediction")
