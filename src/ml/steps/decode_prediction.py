@@ -1,7 +1,7 @@
 import logging
 
 import torch
-from transformers import ProcessorMixin
+from transformers import ProcessorMixin, TrOCRProcessor
 
 WHITE = "\033[37m"
 RESET = "\033[0m"  # reset of color
@@ -22,7 +22,7 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-def decode_prediction(processor: ProcessorMixin, prediction: torch.Tensor) -> str:
+def decode_prediction(processor: TrOCRProcessor, prediction: torch.Tensor) -> str:
     """
     Decode the return of the transformer model (like TrOCR) which are ids
 

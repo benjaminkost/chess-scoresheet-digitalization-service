@@ -1,9 +1,4 @@
 import logging
-from unittest.mock import Mock
-
-import pytest
-import torch
-from transformers import ProcessorMixin
 
 from src.ml.steps.decode_prediction import decode_prediction
 
@@ -13,6 +8,7 @@ def test_decode_prediction(mocker, caplog):
     mock_return_value = ["test worked"]
     mock_processor.batch_decode.return_value = mock_return_value
     spy_log = caplog.at_level(logging.INFO)
+
     result = decode_prediction(processor=mock_processor, prediction=mock_prediction)
 
     assert len(spy_log.args[0].messages) == 1
