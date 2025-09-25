@@ -5,20 +5,44 @@ info:
   license:
     name: MIT
 servers:
-  - url: http://chesshub.app/api
+  - url: https://chesshub.app/api
 paths:
   /image/upload:
     post:
       summary: Creates a chess game in PGN format from an uploaded scoresheet of a chess game
+      operationId: uploadImage
       requestBody:
+        required: true
         content:
           multipart/form-data:
             schema:
               type: object
+              required:
+                - file
       responses:
            "201":
               description: The generated Chess Game in PGN format as a file
               content:
-                text/plain:
+                application/json:
                   schema:
                     type: string
+                    additionalProperties:
+                      type: string
+           "400":
+             description: Bad Request - invalid file or request
+             content:
+               application/json:
+                 schema:
+                   type: object
+                   properties:
+                     detail:
+                       type: string
+           "500":
+            description: Problems during generation of chess game in PGN-format
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    detail:
+                      type: string

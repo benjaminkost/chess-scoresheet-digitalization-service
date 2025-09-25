@@ -1,6 +1,6 @@
 import http
 
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 from src.services.image_service import ImageService
 import logging
@@ -35,7 +35,7 @@ ImageController = APIRouter(
     response_model=None,
     status_code=http.HTTPStatus.CREATED
 )
-async def upload_image(file: UploadFile = File(...)) -> dict[str, str] | FileResponse:
+async def upload_image(file: UploadFile = File(...)) -> FileResponse:
     """
     Create a chess game in PGN format from an uploaded scoresheet of a chess game
 
@@ -55,11 +55,10 @@ async def upload_image(file: UploadFile = File(...)) -> dict[str, str] | FileRes
             )
         else:
             logger.error(f"Path to PGN file '{logger}' does not exist")
-            return {"error": "No PGN-File found"}
+            raise HTTPException(status_code=500, detail="No PGN-File found")
 
     except TypeError as te:
         logger.error(f"TypeError when saving: {te}")
-        return {"error": str(te)}
+        raise HTTPException(status_code=500, detail=str(te))
     except Exception as e:
-        logger.error(f"Exception when saving: {str(e)}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=f"Exception when saving: {str(e)}")
