@@ -37,7 +37,7 @@ ImageController = APIRouter(
 )
 async def upload_image(file: UploadFile = File(...)) -> dict[str, str] | FileResponse:
     """
-    Create a chess game in PGN format from uploaded game
+    Create a chess game in PGN format from an uploaded scoresheet of a chess game
 
     :param file: image of a chess scoresheet
     :return: The generated Chess Game in PGN format as a file or error messages

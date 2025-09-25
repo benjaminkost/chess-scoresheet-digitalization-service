@@ -1,0 +1,24 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Chess Scoresheet Digitization Service
+  license:
+    name: MIT
+servers:
+  - url: http://chesshub.app/api
+paths:
+  /image/upload:
+    post:
+      summary: Creates a chess game in PGN format from an uploaded scoresheet of a chess game
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+      responses:
+           "201":
+              description: The generated Chess Game in PGN format as a file
+              content:
+                text/plain:
+                  schema:
+                    type: string
