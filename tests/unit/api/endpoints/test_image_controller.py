@@ -73,7 +73,7 @@ async def test_upload_use_error_on_create_pgn_file_method_returns_error_log(mock
     with pytest.raises(HTTPException) as ex:
         await upload_image(create_dummy_file)
 
-    assert len(spy_log.args[0].messages) == 2
+    assert len(spy_log.args[0].messages) == 1
     assert spy_log.args[0].messages[0] == f"Exception when saving: {error_message}"
     assert mock_image_service.call_count == 1
     assert ex.value.detail == f"Exception when saving: {error_message}"
