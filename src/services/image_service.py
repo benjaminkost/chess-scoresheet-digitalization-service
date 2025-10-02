@@ -42,7 +42,7 @@ def generate_chess_game_from_image(image_file_path: Path) -> Game:
 
     chess_game = inference_pipeline(str(image_file_path))
 
-    if len(chess_game.errors) is not 0:
+    if len(chess_game.errors) != 0:
         raise Exception("Generated PGN is not in valid PGN format")
     else:
         return chess_game

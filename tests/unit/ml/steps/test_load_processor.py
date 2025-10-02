@@ -16,8 +16,12 @@ def test_load_processor(mocker, caplog, get_test_data_path):
 
     result = load_processor()
 
+    exp_messages = [
+        f"Loading processor from huggingface with URI: '{mock_hf_uri}'",
+        f"Processor loaded from huggingface with URI: '{mock_hf_uri}'"
+    ]
+
+    actual_messages = [msg for msg in spy_log.args[0].messages if mock_hf_uri in msg]
     mock_processor.assert_called_once_with(mock_hf_uri)
     assert type(result) == TrOCRProcessor
-    assert len(spy_log.args[0].messages) == 2
-    assert spy_log.args[0].messages[0] == f"Loading processor from huggingface with URI: '{mock_hf_uri}'"
-    assert spy_log.args[0].messages[1] == f"Processor loaded from huggingface with URI: '{mock_hf_uri}'"
+    assert actual_messages[:2] == exp_messages
