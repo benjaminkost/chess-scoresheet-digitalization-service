@@ -4,7 +4,7 @@ import numpy as np
 from datasets import Dataset
 
 from src.ml.scripts_for_steps.preprocessing_strategy import HuggingFacePreprocessingStrategy
-
+from utils.data_methods import ingest_data
 
 class MyTestCase(unittest.TestCase):
     @classmethod
@@ -12,11 +12,10 @@ class MyTestCase(unittest.TestCase):
         # Give
         owner = "BenjaminKost"
         dataset_name = "unprocessed_hcs"
-        ingestor = HuggingFaceImageDataIngestorStrategy()
         cls.sut_preprocessing = HuggingFacePreprocessingStrategy()
 
         # When
-        cls.dataset = ingestor.ingest_data(owner=owner, dataset_name=dataset_name)
+        cls.dataset = ingest_data(owner=owner, dataset_name=dataset_name)
 
     def test_convert_dataset_to_list_Return_list_of_dataset_returns_list(self):
         # When
@@ -44,7 +43,7 @@ class MyTestCase(unittest.TestCase):
             sample_image = np.array(grayscaled_list[i]["image"])
             count_of_dimensions = len(sample_image.shape)
             self.assertEqual(2, count_of_dimensions)
-        self.assertEqual(206, len(grayscaled_list))  # add assertion here
+        self.assertEqual(206, len(grayscaled_list))
 
     def test_process_image_dataset_gray_scaled_to_binary_with_threshold_returns_list(self):
         # Give
@@ -63,7 +62,7 @@ class MyTestCase(unittest.TestCase):
             sample_image = np.array(list_binary[i]["image"])
             is_image_binary = np.all(np.isin(sample_image, [0, 255]))
             self.assertTrue(is_image_binary)
-        self.assertEqual(206, len(list_binary))  # add assertion here
+        self.assertEqual(206, len(list_binary))
 
     def test_process_image_dataset_binary_to_grid_lines_returns_list(self):
         # Give

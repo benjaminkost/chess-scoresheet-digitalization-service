@@ -1,0 +1,24 @@
+name: Python Testing using Conda
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.12'
+    - name: Install poetry
+      run: |
+        pip install poetry
+    - name: Build project with poetry
+      run: |
+        poetry install
+    - name: Test with pytest
+      run: |
+        poetry run pytest
