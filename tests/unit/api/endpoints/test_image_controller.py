@@ -2,7 +2,7 @@ import logging
 from io import BytesIO
 from pathlib import Path
 import pytest
-from fastapi import UploadFile
+from fastapi import UploadFile, HTTPException
 
 from src.api.endpoints.controllers.image_controller import upload_image
 from src.services.image_service import ImageService
@@ -40,12 +40,11 @@ async def test_upload_image_use_non_existing_path_returns_error_dict(mocker, cre
     pgn_test_file_path = Path(f"non/existing/path")
     mock_image_service = mocker.patch.object(ImageService, "create_pgn_file",
                         new=mocker.AsyncMock(return_value=pgn_test_file_path))
-
-    result = await upload_image(create_dummy_file)
+    with pytest.raises(HTTPException) as ex:
+        await upload_image(create_dummy_file)
 
     assert mock_image_service.call_count == 1
-    assert type(result) == dict
-    assert result["error"] == "No PGN-File found"
+    assert ex.value.detail == "No PGN-File found"
 
 @pytest.mark.asyncio
 async def test_upload_use_error_on_create_pgn_file_method_returns_typeerror_log(mocker, create_dummy_file, caplog):
@@ -55,26 +54,26 @@ async def test_upload_use_error_on_create_pgn_file_method_returns_typeerror_log(
                         new=mocker.AsyncMock(side_effect=type_error))
     spy_log = caplog.at_level(logging.ERROR)
 
-    result = await upload_image(create_dummy_file)
+    with pytest.raises(HTTPException) as ex:
+        await upload_image(create_dummy_file)
 
     assert len(spy_log.args[0].messages) == 1
     assert spy_log.args[0].messages[0] == f"TypeError when saving: {type_error_message}"
     assert mock_image_service.call_count == 1
-    assert type(result) == dict
-    assert result["error"] == type_error_message
+    assert ex.value.detail == f"TypeError when saving: {type_error_message}"
 
 @pytest.mark.asyncio
 async def test_upload_use_error_on_create_pgn_file_method_returns_error_log(mocker, create_dummy_file, caplog):
-    type_error_message = "Generated PGN is not in valid PGN format"
-    type_error = Exception(type_error_message)
+    error_message = "Generated PGN is not in valid PGN format"
+    error = Exception(error_message)
     mock_image_service = mocker.patch.object(ImageService, "create_pgn_file",
-                        new=mocker.AsyncMock(side_effect=type_error))
+                        new=mocker.AsyncMock(side_effect=error))
     spy_log = caplog.at_level(logging.ERROR)
 
-    result = await upload_image(create_dummy_file)
+    with pytest.raises(HTTPException) as ex:
+        await upload_image(create_dummy_file)
 
     assert len(spy_log.args[0].messages) == 1
-    assert spy_log.args[0].messages[0] == f"Exception when saving: {type_error_message}"
+    assert spy_log.args[0].messages[0] == f"Exception when saving: {error_message}"
     assert mock_image_service.call_count == 1
-    assert type(result) == dict
-    assert result["error"] == type_error_message
+    assert ex.value.detail == f"Exception when saving: {error_message}"

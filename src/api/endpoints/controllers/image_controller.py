@@ -46,19 +46,19 @@ async def upload_image(file: UploadFile = File(...)) -> FileResponse:
         pgn_file_path = await ImageService(file=file).create_pgn_file()
 
         logger.info(f"Path to generated PGN file is: {pgn_file_path}")
-
-        if pgn_file_path.exists():
-            return FileResponse(
-                path=str(pgn_file_path),
-                media_type="text/plain",
-                filename=pgn_file_path.name
-            )
-        else:
-            logger.error(f"Path to PGN file '{logger}' does not exist")
-            raise HTTPException(status_code=500, detail="No PGN-File found")
-
     except TypeError as te:
         logger.error(f"TypeError when saving: {te}")
-        raise HTTPException(status_code=500, detail=str(te))
+        raise HTTPException(status_code=500, detail=f"TypeError when saving: {te}")
     except Exception as e:
+        logger.error(f"Exception when saving: {e}")
         raise HTTPException(status_code=500, detail=f"Exception when saving: {str(e)}")
+
+    if pgn_file_path.exists():
+        return FileResponse(
+            path=str(pgn_file_path),
+            media_type="text/plain",
+            filename=pgn_file_path.name
+        )
+    else:
+        logger.error(f"Path to PGN file '{logger}' does not exist")
+        raise HTTPException(status_code=500, detail="No PGN-File found")
